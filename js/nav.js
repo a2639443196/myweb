@@ -244,17 +244,17 @@ const renderOnlineUsers = (users) => {
     link.href = `user-home.html?username=${encodeURIComponent(user.username)}`;
     link.setAttribute('data-username', user.username);
 
-    const identity = document.createElement('div');
-    identity.className = 'online-users__identity';
+    const details = document.createElement('div');
+    details.className = 'online-users__details';
+
+    const identity = document.createElement('span');
+    identity.className = 'online-users__chip online-users__chip--identity';
 
     const dot = document.createElement('span');
     dot.className = 'online-users__dot';
     if (user.online) {
       dot.classList.add('is-online');
     }
-
-    const nameWrapper = document.createElement('div');
-    nameWrapper.className = 'online-users__name';
 
     const nameSpan = document.createElement('span');
     nameSpan.className = 'online-users__username';
@@ -263,8 +263,10 @@ const renderOnlineUsers = (users) => {
       nameSpan.classList.add('is-long');
     }
 
+    identity.append(dot, nameSpan);
+
     const presenceSpan = document.createElement('span');
-    presenceSpan.className = 'online-users__presence';
+    presenceSpan.className = 'online-users__chip online-users__chip--state';
     if (user.online) {
       presenceSpan.textContent = '在线';
       presenceSpan.classList.add('is-online');
@@ -272,18 +274,12 @@ const renderOnlineUsers = (users) => {
       presenceSpan.textContent = user.lastSeen ? `离线 · ${formatRelativeTime(user.lastSeen)}` : '离线 · 暂无记录';
     }
 
-    nameWrapper.append(nameSpan, presenceSpan);
-    identity.append(dot, nameWrapper);
-
-    const status = document.createElement('div');
-    status.className = 'online-users__status';
-
     const phoneSpan = document.createElement('span');
-    phoneSpan.className = 'online-users__phone';
+    phoneSpan.className = 'online-users__chip online-users__chip--phone';
     phoneSpan.textContent = user.phone;
-    status.append(phoneSpan);
 
-    link.append(identity, status);
+    details.append(identity, presenceSpan, phoneSpan);
+    link.append(details);
     item.append(link);
     onlineList.append(item);
   });
