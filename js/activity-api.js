@@ -43,6 +43,9 @@ export async function fetchUserActivity(username, { category } = {}) {
   const response = await fetch(url, {
     credentials: 'include'
   });
+  if (response.status === 404) {
+    return [];
+  }
   if (response.status === 401) {
     throw new Error('未登录');
   }
@@ -57,6 +60,9 @@ export async function fetchUserProfile(username) {
   const response = await fetch(`/api/users/${encodeURIComponent(username)}`, {
     credentials: 'include'
   });
+  if (response.status === 404) {
+    return null;
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(data.error || '获取用户信息失败');
