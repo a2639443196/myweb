@@ -30,8 +30,13 @@ if (!prefersReducedMotion) {
   }
 }
 
-const USER_STORAGE_KEY = 'wellnessHubUsers';
-const ACTIVE_USER_KEY = 'wellnessHubActiveUser';
+class HttpError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.name = 'HttpError';
+    this.status = status;
+  }
+}
 
 const userModal = document.querySelector('[data-role="user-modal"]');
 const userBanner = document.querySelector('[data-role="user-banner"]');
@@ -42,123 +47,59 @@ if (userModal && userBanner) {
   const userGoal = userBanner.querySelector('[data-role="user-goal"]');
   const userFocus = userBanner.querySelector('[data-role="user-focus"]');
   const userTagline = userBanner.querySelector('[data-role="user-tagline"]');
-  const existingSection = userModal.querySelector('[data-role="existing-users"]');
-  const userSelect = userModal.querySelector('[data-role="user-select"]');
-  const activateButton = userModal.querySelector('[data-role="activate-user"]');
   const userForm = userModal.querySelector('[data-role="user-form"]');
   const dismissTriggers = userModal.querySelectorAll('[data-role="close-modal"]');
+  const formError = userModal.querySelector('[data-role="form-error"]');
 
   const defaultTagline = '保持探索与节奏，稳步前进。';
 
-  const safeParse = (value, fallback) => {
-    if (!value) return fallback;
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : fallback;
-    } catch (error) {
-      console.error('无法解析本地用户数据，已重置。', error);
-      return fallback;
-    }
+  const state = {
+    user: null,
   };
 
-  let state = {
-    users: safeParse(localStorage.getItem(USER_STORAGE_KEY), []),
-    activeId: localStorage.getItem(ACTIVE_USER_KEY) || null,
+  const setFormDisabled = (disabled) => {
+    if (!userForm) return;
+    userForm.querySelectorAll('input, button').forEach((element) => {
+      element.disabled = disabled;
+    });
   };
 
-  const persistUsers = () => {
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(state.users));
-  };
-
-  const setActiveUser = (id) => {
-    state.activeId = id;
-    if (id) {
-      localStorage.setItem(ACTIVE_USER_KEY, id);
+  const showError = (message) => {
+    if (!formError) return;
+    if (message) {
+      formError.textContent = message;
+      formError.hidden = false;
     } else {
-      localStorage.removeItem(ACTIVE_USER_KEY);
-    }
-  };
-
-  const findUser = (id) => state.users.find((user) => user.id === id) || null;
-
-  const ensureActiveUserConsistency = () => {
-    if (!state.activeId) return;
-    if (!findUser(state.activeId)) {
-      setActiveUser(null);
+      formError.textContent = '';
+      formError.hidden = true;
     }
   };
 
   const renderBanner = () => {
-    ensureActiveUserConsistency();
-    const user = state.activeId ? findUser(state.activeId) : null;
-    if (!user) {
+    if (!state.user) {
       userBanner.hidden = true;
       userBanner.setAttribute('aria-hidden', 'true');
       return;
     }
 
-    userName.textContent = user.name;
-    userGoal.textContent = user.goal;
-    userFocus.textContent = user.focus;
-    userTagline.textContent = user.tagline || defaultTagline;
+    userName.textContent = state.user.name;
+    userGoal.textContent = state.user.goal;
+    userFocus.textContent = state.user.focus;
+    userTagline.textContent = state.user.tagline || defaultTagline;
     userBanner.hidden = false;
     userBanner.removeAttribute('aria-hidden');
   };
 
-  const updateExistingUsersSection = () => {
-    const hasUsers = state.users.length > 0;
-    if (!existingSection) return;
-
-    if (!hasUsers) {
-      existingSection.hidden = true;
-      userSelect.innerHTML = '';
-      return;
-    }
-
-    existingSection.hidden = false;
-    userSelect.innerHTML = '';
-
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = '请选择一个档案';
-    placeholder.disabled = true;
-    placeholder.selected = !state.activeId;
-    userSelect.append(placeholder);
-
-    state.users.forEach((user) => {
-      const option = document.createElement('option');
-      option.value = user.id;
-      option.textContent = `${user.name} · ${user.goal}`;
-      if (user.id === state.activeId) {
-        option.selected = true;
-      }
-      userSelect.append(option);
-    });
-
-    if (state.activeId) {
-      userSelect.value = state.activeId;
-    }
-  };
-
-  const generateId = () => {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      return crypto.randomUUID();
-    }
-    return `user-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-  };
-
   const closeModal = () => {
-    if (!state.activeId) {
-      return;
-    }
+    if (!userModal) return;
     userModal.hidden = true;
     userModal.setAttribute('aria-hidden', 'true');
   };
 
   const openModal = () => {
+    if (!userModal) return;
     userModal.hidden = false;
     userModal.removeAttribute('aria-hidden');
-    updateExistingUsersSection();
     if (userForm) {
       const firstInput = userForm.querySelector('input[name="name"]');
       if (firstInput) {
@@ -167,13 +108,61 @@ if (userModal && userBanner) {
     }
   };
 
-  const activateUser = (user) => {
-    setActiveUser(user.id);
-    renderBanner();
-    closeModal();
+  const fetchCurrentUser = async () => {
+    const response = await fetch('/api/session', {
+      credentials: 'include',
+    });
+
+    if (response.status === 401) {
+      throw new HttpError('未登录', response.status);
+    }
+
+    if (!response.ok) {
+      throw new HttpError('加载用户信息失败', response.status);
+    }
+
+    const data = await response.json();
+    return data.user;
   };
 
-  userForm?.addEventListener('submit', (event) => {
+  const registerUser = async (payload) => {
+    const response = await fetch('/api/session', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const message = data.error || '注册失败，请稍后再试';
+      throw new HttpError(message, response.status);
+    }
+
+    return data.user;
+  };
+
+  const loadSession = async () => {
+    try {
+      const user = await fetchCurrentUser();
+      state.user = user;
+      renderBanner();
+    } catch (error) {
+      renderBanner();
+      if (error instanceof HttpError && error.status === 401) {
+        openModal();
+        return;
+      }
+      console.error('加载用户信息失败', error);
+      showError('无法加载用户信息，请稍后再试。');
+      openModal();
+    }
+  };
+
+  userForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(userForm);
     const name = String(formData.get('name') || '').trim();
@@ -182,34 +171,29 @@ if (userModal && userBanner) {
     const tagline = String(formData.get('tagline') || '').trim();
 
     if (!name || !goal || !focus) {
+      showError('请完整填写必填信息。');
       return;
     }
 
-    const newUser = {
-      id: generateId(),
-      name,
-      goal,
-      focus,
-      tagline,
-      createdAt: new Date().toISOString(),
-    };
+    showError('');
+    setFormDisabled(true);
 
-    state.users.push(newUser);
-    persistUsers();
-    activateUser(newUser);
-    userForm.reset();
-  });
-
-  activateButton?.addEventListener('click', () => {
-    const selected = userSelect?.value || '';
-    if (!selected) return;
-    const user = findUser(selected);
-    if (!user) return;
-    activateUser(user);
-  });
-
-  userSelect?.addEventListener('change', () => {
-    activateButton?.focus();
+    try {
+      const user = await registerUser({ name, goal, focus, tagline });
+      state.user = user;
+      renderBanner();
+      closeModal();
+      userForm.reset();
+    } catch (error) {
+      if (error instanceof HttpError) {
+        showError(error.message);
+      } else {
+        console.error('注册用户失败', error);
+        showError('注册失败，请稍后再试。');
+      }
+    } finally {
+      setFormDisabled(false);
+    }
   });
 
   dismissTriggers.forEach((button) => {
@@ -222,10 +206,5 @@ if (userModal && userBanner) {
     openModal();
   });
 
-  ensureActiveUserConsistency();
-  if (state.activeId) {
-    renderBanner();
-  } else {
-    openModal();
-  }
+  loadSession();
 }

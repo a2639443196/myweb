@@ -44,18 +44,11 @@
         ×
       </button>
       <h2 id="userModalTitle">欢迎来到 Wellness Hub</h2>
-      <p class="user-modal__intro">创建你的个人档案或选择本地已保存的用户。</p>
+      <p class="user-modal__intro">首次填写资料即可开通账号，信息会安全地保存在服务器中。</p>
       <div class="user-modal__panes">
-        <section class="user-modal__existing" data-role="existing-users" hidden>
-          <h3>选择已有用户</h3>
-          <label class="user-modal__field">
-            <span class="user-modal__label">我的档案</span>
-            <select data-role="user-select"></select>
-          </label>
-          <button type="button" class="user-modal__action" data-role="activate-user">加载档案</button>
-        </section>
         <section class="user-modal__create">
           <h3>创建新档案</h3>
+          <p class="user-modal__note">提交后系统会返回一个安全令牌并保存在浏览器 Cookie 中，下次访问自动登录。</p>
           <form data-role="user-form" class="user-modal__form">
             <label class="user-modal__field">
               <span class="user-modal__label">昵称</span>
@@ -100,6 +93,7 @@
                 placeholder="例如：循序渐进，坚持最棒！"
               />
             </label>
+            <p class="user-modal__error" data-role="form-error" hidden aria-live="assertive"></p>
             <button type="submit" class="user-modal__action">保存并开始</button>
           </form>
         </section>
