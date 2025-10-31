@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import secrets
 import sqlite3
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from flask import Flask, abort, jsonify, make_response, request, send_from_directory
+from flask_sock import Sock
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR
@@ -15,6 +18,86 @@ DATABASE_PATH = Path(__file__).resolve().parent / "wellness.db"
 SESSION_COOKIE_NAME = "session_token"
 SESSION_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
 ONLINE_THRESHOLD_SECONDS = 60
+ONLINE_BROADCAST_INTERVAL = 10
+
+
+class OnlineUserNotifier:
+    def __init__(self, fetch_users: Callable[[], list[Dict[str, Any]]], interval: int = ONLINE_BROADCAST_INTERVAL) -> None:
+        self._fetch_users = fetch_users
+        self._interval = interval
+        self._clients: set[Any] = set()
+        self._lock = threading.Lock()
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._poll_loop, daemon=True)
+        self._thread.start()
+
+    def _poll_loop(self) -> None:
+        while not self._stop.wait(self._interval):
+            self.broadcast_current()
+
+    def register(self, ws: Any) -> None:
+        with self._lock:
+            self._clients.add(ws)
+        self._send_snapshot(ws)
+
+    def unregister(self, ws: Any) -> None:
+        with self._lock:
+            self._clients.discard(ws)
+
+    def shutdown(self) -> None:
+        self._stop.set()
+        self.broadcast([])
+
+    def broadcast_current(self) -> None:
+        self.broadcast(self._fetch_users())
+
+    def broadcast(self, users: list[Dict[str, Any]]) -> None:
+        with self._lock:
+            clients = list(self._clients)
+        if not clients:
+            return
+
+        payload = self._serialize({"type": "online_users", "users": users})
+        stale: list[Any] = []
+
+        for ws in clients:
+            try:
+                ws.send(payload)
+            except Exception:
+                stale.append(ws)
+
+        if stale:
+            with self._lock:
+                for ws in stale:
+                    self._clients.discard(ws)
+
+    def notify(self) -> None:
+        self.broadcast_current()
+
+    def _send_snapshot(self, ws: Any) -> None:
+        try:
+            ws.send(
+                self._serialize(
+                    {
+                        "type": "online_users",
+                        "users": self._fetch_users(),
+                    }
+                )
+            )
+        except Exception:
+            self.unregister(ws)
+
+    @staticmethod
+    def _serialize(payload: Dict[str, Any]) -> str:
+        return json.dumps(payload, ensure_ascii=False)
+
+
+online_user_notifier: Optional[OnlineUserNotifier] = None
+
+
+def notify_online_users_change() -> None:
+    if online_user_notifier is not None:
+        online_user_notifier.notify()
 
 
 def create_app() -> Flask:
@@ -22,7 +105,13 @@ def create_app() -> Flask:
     app.config["JSON_AS_ASCII"] = False
     app.config["DATABASE"] = DATABASE_PATH
 
+    sock = Sock(app)
+
     init_db(app.config["DATABASE"])
+
+    global online_user_notifier
+    if online_user_notifier is None:
+        online_user_notifier = OnlineUserNotifier(list_online_users)
 
     @app.get("/api/healthz")
     def healthcheck() -> Any:
@@ -160,6 +249,25 @@ def create_app() -> Flask:
         users = list_online_users()
         return jsonify({"users": users})
 
+    @sock.route("/ws/online")
+    def online_users_socket(ws: Any) -> None:
+        if online_user_notifier is None:
+            return
+
+        online_user_notifier.register(ws)
+        try:
+            while True:
+                try:
+                    message = ws.receive()
+                except Exception:
+                    break
+                if message is None:
+                    break
+                if isinstance(message, str) and message.strip().lower() == "ping":
+                    ws.send(json.dumps({"type": "pong"}, ensure_ascii=False))
+        finally:
+            online_user_notifier.unregister(ws)
+
     @app.route("/", defaults={"path": "index.html"})
     @app.route("/<path:path>")
     def serve_frontend(path: str) -> Any:
@@ -292,6 +400,7 @@ def create_session(account_id: int) -> str:
             (token, account_id, timestamp, timestamp),
         )
         connection.commit()
+    notify_online_users_change()
     return token
 
 
@@ -303,13 +412,17 @@ def update_session_last_seen(token: str) -> bool:
             (timestamp, token),
         )
         connection.commit()
-        return cursor.rowcount > 0
+        if cursor.rowcount > 0:
+            notify_online_users_change()
+            return True
+        return False
 
 
 def delete_session(token: str) -> None:
     with get_db_connection() as connection:
         connection.execute("DELETE FROM sessions WHERE token = ?", (token,))
         connection.commit()
+    notify_online_users_change()
 
 
 def list_online_users() -> list[Dict[str, Any]]:
