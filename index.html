@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>健康生活导航 | Wellness Hub</title>
+  <link rel="stylesheet" href="css/nav.css" />
+</head>
+<body>
+  <div class="gradient-orb" aria-hidden="true"></div>
+  <header class="hero">
+    <h1>健康生活导航</h1>
+    <p>
+      在这里快速进入你的健康管理工具。炫酷的霓虹卡片和响应式网格布局，
+      让你无论在电脑还是手机上都能迅速找到需要的页面。
+    </p>
+  </header>
+  <main>
+    <div class="nav-grid">
+      <a class="nav-card" href="drink-water.html">
+        <div class="nav-card__icon">💧</div>
+        <div>
+          <div class="nav-card__title">喝水追踪器</div>
+          <p class="nav-card__desc">记录每日饮水目标，使用可视化大杯与小杯帮助你保持充足水分。</p>
+        </div>
+        <div class="nav-card__footer">立即进入 <span aria-hidden="true">→</span></div>
+      </a>
+
+      <a class="nav-card" href="sleep-tracker.html">
+        <div class="nav-card__icon">🌙</div>
+        <div>
+          <div class="nav-card__title">睡眠打卡</div>
+          <p class="nav-card__desc">记录你的睡眠周期与休息感受，帮助你逐步建立健康作息。</p>
+        </div>
+        <div class="nav-card__footer">开始记录 <span aria-hidden="true">→</span></div>
+      </a>
+
+      <a class="nav-card" href="nutrition-planner.html">
+        <div class="nav-card__icon">🥗</div>
+        <div>
+          <div class="nav-card__title">营养规划</div>
+          <p class="nav-card__desc">规划每日膳食与营养摄入，结合目标卡片与灵感建议自定义你的菜单。</p>
+        </div>
+        <div class="nav-card__footer">开启规划 <span aria-hidden="true">→</span></div>
+      </a>
+    </div>
+  </main>
+  <footer>
+    © <span id="currentYear"></span> Wellness Hub · 拥抱健康生活方式。
+  </footer>
+  <script type="module" src="js/nav.js"></script>
+  <script type="module" src="js/util-footer.js"></script>
+</body>
+</html>
