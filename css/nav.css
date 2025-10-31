@@ -61,6 +61,190 @@ main {
   padding: 1rem clamp(1.5rem, 6vw, 6rem) clamp(3rem, 6vw, 6rem);
 }
 
+.user-profile {
+  margin-inline: clamp(1.5rem, 6vw, 6rem);
+  margin-bottom: clamp(1.5rem, 4vw, 3rem);
+  padding: clamp(1.6rem, 4vw, 2.4rem);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(56, 189, 248, 0.05));
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.5rem;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 40px -20px rgba(14, 165, 233, 0.6);
+}
+
+.user-profile__content {
+  flex: 1 1 240px;
+  min-width: 220px;
+}
+
+.user-profile__content h2 {
+  margin: 0 0 0.6rem;
+  font-size: clamp(1.6rem, 3.2vw, 2.2rem);
+}
+
+.user-profile__goal {
+  margin: 0 0 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+}
+
+.user-profile__metrics {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.user-profile__metrics dt {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.user-profile__metrics dd {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.user-profile__manage {
+  align-self: center;
+  padding: 0.7rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.65);
+  background: rgba(15, 23, 42, 0.7);
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.user-profile__manage:hover,
+.user-profile__manage:focus-visible {
+  background: rgba(56, 189, 248, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -14px rgba(56, 189, 248, 0.7);
+}
+
+.user-modal[hidden] {
+  display: none;
+}
+
+.user-modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 999;
+}
+
+.user-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+}
+
+.user-modal__dialog {
+  position: relative;
+  width: min(620px, calc(100vw - 2.5rem));
+  max-height: calc(100vh - 3rem);
+  overflow: auto;
+  border-radius: 24px;
+  padding: clamp(1.8rem, 4vw, 2.4rem);
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 40px 80px -40px rgba(14, 165, 233, 0.65);
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.user-modal__close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(56, 189, 248, 0.2);
+  color: var(--text-main);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.user-modal__intro {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.user-modal__panes {
+  display: grid;
+  gap: 1.6rem;
+}
+
+.user-modal__panes h3 {
+  margin: 0 0 0.6rem;
+}
+
+.user-modal__form {
+  display: grid;
+  gap: 1rem;
+}
+
+.user-modal__field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.user-modal__label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.user-modal__field input,
+.user-modal__field select {
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--text-main);
+  font-size: 1rem;
+}
+
+.user-modal__field input:focus-visible,
+.user-modal__field select:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.6);
+  outline-offset: 2px;
+}
+
+.user-modal__action {
+  align-self: flex-start;
+  padding: 0.7rem 1.4rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.9), rgba(14, 165, 233, 0.9));
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 20px 40px -30px rgba(14, 165, 233, 0.8);
+}
+
+.user-modal__action:hover,
+.user-modal__action:focus-visible {
+  filter: brightness(1.05);
+}
+
 .nav-grid {
   display: grid;
   gap: clamp(1.4rem, 3vw, 2.5rem);
@@ -162,6 +346,15 @@ footer {
   main {
     padding-inline: 1.2rem;
     padding-bottom: 3.5rem;
+  }
+
+  .user-profile {
+    margin-inline: 1.2rem;
+  }
+
+  .user-modal__dialog {
+    width: calc(100vw - 2.4rem);
+    max-height: calc(100vh - 2rem);
   }
 
   footer {
