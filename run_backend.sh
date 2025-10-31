@@ -3,6 +3,8 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+PYTHON_BIN=$(command -v python3.8 || command -v python3)
+
 stop_service() {
     local stopped=0
 
@@ -23,14 +25,14 @@ stop_service() {
 
 install_dependencies() {
     echo "正在安装依赖..."
-    python3 -m pip install --upgrade pip
-    python3 -m pip install -r "$PROJECT_ROOT/backend/requirements.txt"
+    $PYTHON_BIN -m pip install --upgrade pip setuptools wheel
+    $PYTHON_BIN -m pip install -r "$PROJECT_ROOT/backend/requirements.txt"
 }
 
 start_service() {
     echo "正在启动后端服务..."
     cd "$PROJECT_ROOT"
-    exec python3 -m backend.app
+    exec $PYTHON_BIN -m backend.app
 }
 
 stop_service
