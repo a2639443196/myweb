@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import secrets
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -13,6 +14,7 @@ FRONTEND_DIR = BASE_DIR
 DATABASE_PATH = Path(__file__).resolve().parent / "wellness.db"
 SESSION_COOKIE_NAME = "session_token"
 SESSION_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
+ONLINE_THRESHOLD_SECONDS = 60
 
 
 def create_app() -> Flask:
@@ -32,8 +34,8 @@ def create_app() -> Flask:
         if not token:
             return jsonify({"error": "未登录"}), 401
 
-        user = fetch_user_by_token(token)
-        if not user:
+        account = fetch_account_by_session_token(token)
+        if not account:
             response = jsonify({"error": "会话无效"})
             response.set_cookie(
                 SESSION_COOKIE_NAME,
@@ -46,33 +48,57 @@ def create_app() -> Flask:
             )
             return response, 401
 
-        return jsonify({"user": user})
+        update_session_last_seen(token)
+        return jsonify({"user": serialize_account(account)})
 
-    @app.post("/api/session")
-    def create_session() -> Any:
+    @app.post("/api/session/heartbeat")
+    def session_heartbeat() -> Any:
+        token = request.cookies.get(SESSION_COOKIE_NAME)
+        if not token:
+            return jsonify({"error": "未登录"}), 401
+
+        if not update_session_last_seen(token):
+            response = jsonify({"error": "会话无效"})
+            response.set_cookie(
+                SESSION_COOKIE_NAME,
+                "",
+                max_age=0,
+                secure=False,
+                httponly=True,
+                samesite="Lax",
+                path="/",
+            )
+            return response, 401
+
+        return ("", 204)
+
+    @app.post("/api/register")
+    def register() -> Any:
         payload = request.get_json(silent=True) or {}
-        name = str(payload.get("name", "")).strip()
-        goal = str(payload.get("goal", "")).strip()
-        focus = str(payload.get("focus", "")).strip()
-        tagline = str(payload.get("tagline", "")).strip()
+        username = str(payload.get("username", "")).strip()
+        password = str(payload.get("password", "")).strip()
+        phone = str(payload.get("phone", "")).strip()
 
-        if not name or not goal or not focus:
-            return jsonify({"error": "请填写必填项"}), 400
+        if not username or not password or not phone:
+            return jsonify({"error": "请完整填写用户名、密码和手机号。"}), 400
 
-        token = secrets.token_urlsafe(32)
-        user = {
-            "name": name,
-            "goal": goal,
-            "focus": focus,
-            "tagline": tagline,
-        }
+        if len(username) < 3:
+            return jsonify({"error": "用户名至少 3 个字符。"}), 400
+
+        if len(password) < 6:
+            return jsonify({"error": "密码至少 6 个字符。"}), 400
+
+        password_hash = hash_password(password)
 
         try:
-            stored_user = insert_user(token=token, **user)
+            account = create_account(username=username, password_hash=password_hash, phone=phone)
+        except sqlite3.IntegrityError:
+            return jsonify({"error": "用户名已被注册。"}), 409
         except sqlite3.Error as error:
-            return jsonify({"error": "保存用户失败", "details": str(error)}), 500
+            return jsonify({"error": "注册失败", "details": str(error)}), 500
 
-        response = make_response(jsonify({"user": stored_user}))
+        token = create_session(account_id=account["id"])
+        response = make_response(jsonify({"user": serialize_account(account)}))
         response.set_cookie(
             SESSION_COOKIE_NAME,
             token,
@@ -83,6 +109,56 @@ def create_app() -> Flask:
             path="/",
         )
         return response
+
+    @app.post("/api/login")
+    def login() -> Any:
+        payload = request.get_json(silent=True) or {}
+        username = str(payload.get("username", "")).strip()
+        password = str(payload.get("password", "")).strip()
+
+        if not username or not password:
+            return jsonify({"error": "请输入用户名和密码。"}), 400
+
+        account = fetch_account_by_username(username)
+        if not account or not verify_password(password, account["password_hash"]):
+            return jsonify({"error": "用户名或密码不正确。"}), 401
+
+        token = create_session(account_id=account["id"])
+        response = make_response(jsonify({"user": serialize_account(account)}))
+        response.set_cookie(
+            SESSION_COOKIE_NAME,
+            token,
+            max_age=SESSION_MAX_AGE,
+            secure=False,
+            httponly=True,
+            samesite="Lax",
+            path="/",
+        )
+        return response
+
+    @app.post("/api/logout")
+    def logout() -> Any:
+        token = request.cookies.get(SESSION_COOKIE_NAME)
+        response = make_response(jsonify({"status": "ok"}))
+        response.set_cookie(
+            SESSION_COOKIE_NAME,
+            "",
+            max_age=0,
+            secure=False,
+            httponly=True,
+            samesite="Lax",
+            path="/",
+        )
+
+        if token:
+            delete_session(token)
+
+        return response
+
+    @app.get("/api/online-users")
+    def online_users() -> Any:
+        users = list_online_users()
+        return jsonify({"users": users})
 
     @app.route("/", defaults={"path": "index.html"})
     @app.route("/<path:path>")
@@ -114,18 +190,35 @@ def create_app() -> Flask:
 def init_db(database_path: Path) -> None:
     database_path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(database_path) as connection:
+        connection.execute("PRAGMA foreign_keys = ON")
         connection.execute(
             """
-            CREATE TABLE IF NOT EXISTS users (
+            CREATE TABLE IF NOT EXISTS accounts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                token TEXT NOT NULL UNIQUE,
-                name TEXT NOT NULL,
-                goal TEXT NOT NULL,
-                focus TEXT NOT NULL,
-                tagline TEXT,
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                phone TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )
             """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                token TEXT NOT NULL UNIQUE,
+                account_id INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                last_seen TEXT NOT NULL,
+                FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+            )
+            """
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_sessions_account ON sessions(account_id)"
         )
         connection.commit()
 
@@ -133,41 +226,140 @@ def init_db(database_path: Path) -> None:
 def get_db_connection() -> sqlite3.Connection:
     connection = sqlite3.connect(DATABASE_PATH)
     connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
     return connection
 
 
-def fetch_user_by_token(token: str) -> Optional[Dict[str, Any]]:
-    with get_db_connection() as connection:
-        row = connection.execute(
-            "SELECT name, goal, focus, COALESCE(tagline, '') AS tagline, created_at FROM users WHERE token = ?",
-            (token,),
-        ).fetchone()
-        if not row:
-            return None
-        return {
-            "name": row["name"],
-            "goal": row["goal"],
-            "focus": row["focus"],
-            "tagline": row["tagline"],
-            "createdAt": row["created_at"],
-        }
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
-def insert_user(token: str, name: str, goal: str, focus: str, tagline: str) -> Dict[str, Any]:
+def verify_password(password: str, password_hash: str) -> bool:
+    return hash_password(password) == password_hash
+
+
+def create_account(username: str, password_hash: str, phone: str) -> Dict[str, Any]:
     created_at = datetime.now(timezone.utc).isoformat()
     with get_db_connection() as connection:
-        connection.execute(
-            "INSERT INTO users (token, name, goal, focus, tagline, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (token, name, goal, focus, tagline or None, created_at),
+        cursor = connection.execute(
+            "INSERT INTO accounts (username, password_hash, phone, created_at) VALUES (?, ?, ?, ?)",
+            (username, password_hash, phone, created_at),
         )
+        account_id = cursor.lastrowid
         connection.commit()
 
     return {
-        "name": name,
-        "goal": goal,
-        "focus": focus,
-        "tagline": tagline,
-        "createdAt": created_at,
+        "id": account_id,
+        "username": username,
+        "phone": phone,
+        "created_at": created_at,
+    }
+
+
+def fetch_account_by_username(username: str) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        row = connection.execute(
+            "SELECT id, username, password_hash, phone, created_at FROM accounts WHERE username = ?",
+            (username,),
+        ).fetchone()
+    if not row:
+        return None
+    return dict(row)
+
+
+def fetch_account_by_session_token(token: str) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT accounts.id, accounts.username, accounts.phone, accounts.created_at
+            FROM sessions
+            JOIN accounts ON accounts.id = sessions.account_id
+            WHERE sessions.token = ?
+            """,
+            (token,),
+        ).fetchone()
+    if not row:
+        return None
+    return dict(row)
+
+
+def create_session(account_id: int) -> str:
+    token = secrets.token_urlsafe(32)
+    timestamp = datetime.now(timezone.utc).isoformat()
+    with get_db_connection() as connection:
+        connection.execute(
+            "INSERT INTO sessions (token, account_id, created_at, last_seen) VALUES (?, ?, ?, ?)",
+            (token, account_id, timestamp, timestamp),
+        )
+        connection.commit()
+    return token
+
+
+def update_session_last_seen(token: str) -> bool:
+    timestamp = datetime.now(timezone.utc).isoformat()
+    with get_db_connection() as connection:
+        cursor = connection.execute(
+            "UPDATE sessions SET last_seen = ? WHERE token = ?",
+            (timestamp, token),
+        )
+        connection.commit()
+        return cursor.rowcount > 0
+
+
+def delete_session(token: str) -> None:
+    with get_db_connection() as connection:
+        connection.execute("DELETE FROM sessions WHERE token = ?", (token,))
+        connection.commit()
+
+
+def list_online_users() -> list[Dict[str, Any]]:
+    threshold = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_THRESHOLD_SECONDS)
+    users: list[Dict[str, Any]] = []
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT
+                accounts.username,
+                accounts.phone,
+                accounts.created_at,
+                MAX(sessions.last_seen) AS last_seen
+            FROM accounts
+            LEFT JOIN sessions ON sessions.account_id = accounts.id
+            GROUP BY accounts.id
+            ORDER BY accounts.username COLLATE NOCASE
+            """,
+        ).fetchall()
+
+    for row in rows:
+        last_seen_str = row["last_seen"]
+        last_seen_dt: Optional[datetime] = None
+        if last_seen_str:
+            try:
+                last_seen_dt = datetime.fromisoformat(last_seen_str)
+            except ValueError:
+                last_seen_dt = None
+            if last_seen_dt and last_seen_dt.tzinfo is None:
+                last_seen_dt = last_seen_dt.replace(tzinfo=timezone.utc)
+        is_online = bool(last_seen_dt and last_seen_dt >= threshold)
+
+        users.append(
+            {
+                "username": row["username"],
+                "phone": row["phone"],
+                "createdAt": row["created_at"],
+                "lastSeen": last_seen_str if last_seen_str else None,
+                "online": is_online,
+            }
+        )
+
+    return users
+
+
+def serialize_account(account: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "username": account["username"],
+        "phone": account["phone"],
+        "createdAt": account["created_at"],
     }
 
 
