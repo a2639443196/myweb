@@ -18,89 +18,101 @@
   <section class="user-profile" data-role="user-banner" hidden>
     <div class="user-profile__content">
       <h2>欢迎回来，<span data-role="user-name"></span></h2>
-      <p class="user-profile__goal">
-        <span aria-hidden="true">🎯</span>
-        <span data-role="user-goal"></span>
-      </p>
       <dl class="user-profile__metrics">
         <div>
-          <dt>重点关注</dt>
-          <dd data-role="user-focus"></dd>
+          <dt>手机号</dt>
+          <dd data-role="user-phone"></dd>
         </div>
         <div>
-          <dt>给自己的话</dt>
-          <dd data-role="user-tagline"></dd>
+          <dt>注册时间</dt>
+          <dd data-role="user-created"></dd>
         </div>
       </dl>
     </div>
-    <button type="button" class="user-profile__manage" data-role="manage-profile">
-      管理档案
+    <button type="button" class="user-profile__logout" data-role="logout">
+      退出登录
     </button>
   </section>
-  <div class="user-modal" data-role="user-modal" hidden>
-    <div class="user-modal__overlay" data-role="close-modal" tabindex="-1"></div>
-    <div class="user-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
-      <button class="user-modal__close" type="button" data-role="close-modal" aria-label="关闭">
-        ×
-      </button>
-      <h2 id="userModalTitle">欢迎来到 Wellness Hub</h2>
-      <p class="user-modal__intro">首次填写资料即可开通账号，信息会安全地保存在服务器中。</p>
-      <div class="user-modal__panes">
-        <section class="user-modal__create">
-          <h3>创建新档案</h3>
-          <p class="user-modal__note">提交后系统会返回一个安全令牌并保存在浏览器 Cookie 中，下次访问自动登录。</p>
-          <form data-role="user-form" class="user-modal__form">
-            <label class="user-modal__field">
-              <span class="user-modal__label">昵称</span>
-              <input
-                name="name"
-                type="text"
-                required
-                maxlength="40"
-                autocomplete="off"
-                placeholder="例如：活力小分队"
-              />
-            </label>
-            <label class="user-modal__field">
-              <span class="user-modal__label">健康目标</span>
-              <input
-                name="goal"
-                type="text"
-                required
-                maxlength="120"
-                autocomplete="off"
-                placeholder="例如：30 天重启睡眠节奏"
-              />
-            </label>
-            <label class="user-modal__field">
-              <span class="user-modal__label">重点关注</span>
-              <input
-                name="focus"
-                type="text"
-                required
-                maxlength="120"
-                autocomplete="off"
-                placeholder="例如：保持每日 2000 ml 饮水"
-              />
-            </label>
-            <label class="user-modal__field">
-              <span class="user-modal__label">给自己的话</span>
-              <input
-                name="tagline"
-                type="text"
-                maxlength="120"
-                autocomplete="off"
-                placeholder="例如：循序渐进，坚持最棒！"
-              />
-            </label>
-            <p class="user-modal__error" data-role="form-error" hidden aria-live="assertive"></p>
-            <button type="submit" class="user-modal__action">保存并开始</button>
-          </form>
-        </section>
+  <section class="online-users" data-role="online-users" hidden>
+    <div class="online-users__header">
+      <h2>实时在线用户</h2>
+      <p class="online-users__hint">状态每 10 秒自动刷新</p>
+    </div>
+    <ul class="online-users__list" data-role="online-user-list" aria-live="polite"></ul>
+  </section>
+  <div class="auth-modal" data-role="auth-modal" hidden>
+    <div
+      class="auth-modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="authModalTitle"
+    >
+      <h2 id="authModalTitle">欢迎加入 Wellness Hub</h2>
+      <p class="auth-modal__intro">
+        注册或登录后即可访问所有功能。账户信息仅包含用户名、密码与手机号。
+      </p>
+      <div class="auth-modal__tabs" role="tablist">
+        <button type="button" class="auth-modal__tab is-active" data-role="auth-tab" data-view="login" role="tab">
+          登录
+        </button>
+        <button type="button" class="auth-modal__tab" data-role="auth-tab" data-view="register" role="tab">
+          注册
+        </button>
       </div>
+      <form class="auth-form" data-role="login-form" autocomplete="off">
+        <label class="auth-form__field">
+          <span class="auth-form__label">用户名</span>
+          <input name="username" type="text" required minlength="3" maxlength="40" autocomplete="username" />
+        </label>
+        <label class="auth-form__field">
+          <span class="auth-form__label">密码</span>
+          <input name="password" type="password" required minlength="6" maxlength="100" autocomplete="current-password" />
+        </label>
+        <p class="auth-form__error" data-role="login-error" hidden aria-live="assertive"></p>
+        <button type="submit" class="auth-form__submit">登录</button>
+      </form>
+      <form class="auth-form" data-role="register-form" autocomplete="off" hidden>
+        <label class="auth-form__field">
+          <span class="auth-form__label">用户名</span>
+          <input
+            name="username"
+            type="text"
+            required
+            minlength="3"
+            maxlength="40"
+            autocomplete="username"
+            placeholder="支持字母、数字与下划线"
+          />
+        </label>
+        <label class="auth-form__field">
+          <span class="auth-form__label">密码</span>
+          <input
+            name="password"
+            type="password"
+            required
+            minlength="6"
+            maxlength="100"
+            autocomplete="new-password"
+            placeholder="至少 6 位"
+          />
+        </label>
+        <label class="auth-form__field">
+          <span class="auth-form__label">手机号</span>
+          <input
+            name="phone"
+            type="tel"
+            required
+            maxlength="20"
+            autocomplete="tel"
+            placeholder="请输入常用手机号"
+          />
+        </label>
+        <p class="auth-form__error" data-role="register-error" hidden aria-live="assertive"></p>
+        <button type="submit" class="auth-form__submit">注册并登录</button>
+      </form>
     </div>
   </div>
-  <main>
+  <main data-role="protected-area" hidden>
     <div class="nav-grid">
       <a class="nav-card" href="drink-water.html">
         <div class="nav-card__icon">💧</div>
@@ -130,7 +142,7 @@
       </a>
     </div>
   </main>
-  <footer>
+  <footer data-role="protected-area" hidden>
     © <span id="currentYear"></span> Wellness Hub · 拥抱健康生活方式。
   </footer>
   <script type="module" src="js/nav.js"></script>
