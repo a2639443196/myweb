@@ -23,10 +23,14 @@ const template = document.getElementById('timeline-item-template');
 function showEmpty(message) {
   if (page) {
     page.hidden = true;
+    page.setAttribute('hidden', '');
+    page.style.display = 'none';
     page.setAttribute('aria-hidden', 'true');
   }
   if (emptyState) {
     emptyState.hidden = false;
+    emptyState.removeAttribute('hidden');
+    emptyState.style.display = 'grid';
     emptyState.removeAttribute('aria-hidden');
   }
   if (emptyMessage) {
@@ -40,10 +44,14 @@ function showPage() {
   }
   if (page) {
     page.hidden = false;
+    page.removeAttribute('hidden');
+    page.style.removeProperty('display');
     page.removeAttribute('aria-hidden');
   }
   if (emptyState) {
     emptyState.hidden = true;
+    emptyState.setAttribute('hidden', '');
+    emptyState.style.display = 'none';
     emptyState.setAttribute('aria-hidden', 'true');
   }
 }
@@ -110,7 +118,8 @@ function renderTimeline(activities) {
   if (!activities.length) {
     const empty = document.createElement('li');
     empty.className = 'timeline-item';
-    empty.innerHTML = '<div class="timeline-item__time">--:--</div><div class="timeline-item__content"><p class="timeline-item__summary">暂无活动</p><p class="timeline-item__meta">快去记录一点内容吧。</p></div>';
+    empty.innerHTML =
+      '<div class="timeline-item__time">--:--</div><div class="timeline-item__content"><p class="timeline-item__summary">暂无活动</p><p class="timeline-item__meta">快去记录一点内容吧。</p></div>';
     timelineEl.append(empty);
     if (timelineSection) {
       timelineSection.setAttribute('data-empty', 'true');
