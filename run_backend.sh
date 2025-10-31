@@ -2,7 +2,6 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 PYTHON_BIN=$(command -v python3.8 || true)
 
 if [[ -z "${PYTHON_BIN}" ]]; then
@@ -10,17 +9,15 @@ if [[ -z "${PYTHON_BIN}" ]]; then
     exit 1
 fi
 
+# 停止旧进程
 stop_service() {
     local stopped=0
-
     if pkill -f "python[0-9.]* -m backend.app" >/dev/null 2>&1; then
         stopped=1
     fi
-
     if pkill -f "python[0-9.]* .*backend/app.py" >/dev/null 2>&1; then
         stopped=1
     fi
-
     if [[ $stopped -eq 1 ]]; then
         echo "已停止正在运行的后端服务。"
     else
@@ -28,41 +25,40 @@ stop_service() {
     fi
 }
 
+# 释放8000端口
 kill_port_service() {
     local port=8000
-    local killed=0
-
-    if command -v fuser >/dev/null 2>&1; then
-        if fuser -k "${port}/tcp" >/dev/null 2>&1; then
-            killed=1
-        fi
-    elif command -v lsof >/dev/null 2>&1; then
-        local pids
-        if pids=$(lsof -ti tcp:"${port}" 2>/dev/null) && [[ -n "${pids}" ]]; then
-            kill ${pids} >/dev/null 2>&1 || true
-            killed=1
-        fi
+    echo "检查端口 ${port} ..."
+    local pids
+    if command -v lsof >/dev/null 2>&1; then
+        pids=$(lsof -ti tcp:"${port}" || true)
+    elif command -v fuser >/dev/null 2>&1; then
+        pids=$(fuser "${port}/tcp" 2>/dev/null || true)
     fi
-
-    if [[ ${killed} -eq 1 ]]; then
-        echo "已释放端口 ${port}。"
+    if [[ -n "${pids:-}" ]]; then
+        echo "端口 ${port} 被占用，正在终止进程：${pids}"
+        kill -9 ${pids} >/dev/null 2>&1 || true
+        echo "端口 ${port} 已释放。"
     else
-        echo "端口 ${port} 无占用或未找到终止工具。"
+        echo "端口 ${port} 空闲。"
     fi
 }
 
+# 安装依赖
 install_dependencies() {
     echo "正在安装依赖..."
     $PYTHON_BIN -m pip install --upgrade pip setuptools wheel
     $PYTHON_BIN -m pip install -r "$PROJECT_ROOT/backend/requirements.txt"
 }
 
+# 启动服务
 start_service() {
     echo "正在启动后端服务..."
     cd "$PROJECT_ROOT"
     exec $PYTHON_BIN -m backend.app
 }
 
+# 执行流程
 stop_service
 kill_port_service
 install_dependencies
