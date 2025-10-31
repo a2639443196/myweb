@@ -3,7 +3,12 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-PYTHON_BIN=$(command -v python3.8 || command -v python3)
+PYTHON_BIN=$(command -v python3.8 || true)
+
+if [[ -z "${PYTHON_BIN}" ]]; then
+    echo "未找到 python3.8，请先安装后再运行此脚本。" >&2
+    exit 1
+fi
 
 stop_service() {
     local stopped=0
@@ -23,6 +28,29 @@ stop_service() {
     fi
 }
 
+kill_port_service() {
+    local port=8000
+    local killed=0
+
+    if command -v fuser >/dev/null 2>&1; then
+        if fuser -k "${port}/tcp" >/dev/null 2>&1; then
+            killed=1
+        fi
+    elif command -v lsof >/dev/null 2>&1; then
+        local pids
+        if pids=$(lsof -ti tcp:"${port}" 2>/dev/null) && [[ -n "${pids}" ]]; then
+            kill ${pids} >/dev/null 2>&1 || true
+            killed=1
+        fi
+    fi
+
+    if [[ ${killed} -eq 1 ]]; then
+        echo "已释放端口 ${port}。"
+    else
+        echo "端口 ${port} 无占用或未找到终止工具。"
+    fi
+}
+
 install_dependencies() {
     echo "正在安装依赖..."
     $PYTHON_BIN -m pip install --upgrade pip setuptools wheel
@@ -36,5 +64,6 @@ start_service() {
 }
 
 stop_service
+kill_port_service
 install_dependencies
 start_service
