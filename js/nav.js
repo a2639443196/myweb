@@ -39,14 +39,15 @@ class HttpError extends Error {
 }
 
 const HEARTBEAT_INTERVAL = 30_000;
-const ONLINE_REFRESH_INTERVAL = 10_000;
 
-const authModal = document.querySelector('[data-role="auth-modal"]');
-const authTabs = authModal ? Array.from(authModal.querySelectorAll('[data-role="auth-tab"]')) : [];
-const loginForm = authModal?.querySelector('[data-role="login-form"]') ?? null;
-const registerForm = authModal?.querySelector('[data-role="register-form"]') ?? null;
-const loginError = authModal?.querySelector('[data-role="login-error"]') ?? null;
-const registerError = authModal?.querySelector('[data-role="register-error"]') ?? null;
+const loginModal = document.querySelector('[data-role="login-modal"]');
+const registerModal = document.querySelector('[data-role="register-modal"]');
+const loginForm = loginModal?.querySelector('[data-role="login-form"]') ?? null;
+const registerForm = registerModal?.querySelector('[data-role="register-form"]') ?? null;
+const loginError = loginModal?.querySelector('[data-role="login-error"]') ?? null;
+const registerError = registerModal?.querySelector('[data-role="register-error"]') ?? null;
+const openRegisterButtons = Array.from(document.querySelectorAll('[data-role="open-register"]'));
+const openLoginButtons = Array.from(document.querySelectorAll('[data-role="open-login"]'));
 const userBanner = document.querySelector('[data-role="user-banner"]');
 const userName = userBanner?.querySelector('[data-role="user-name"]') ?? null;
 const userPhone = userBanner?.querySelector('[data-role="user-phone"]') ?? null;
@@ -58,9 +59,11 @@ const onlineList = onlineSection?.querySelector('[data-role="online-user-list"]'
 
 const state = {
   user: null,
-  authView: 'login',
+  activeModal: null,
   heartbeatTimer: null,
-  onlineTimer: null,
+  onlineSocket: null,
+  onlineReconnectTimer: null,
+  shouldReconnectOnline: false,
 };
 
 const showError = (element, message) => {
@@ -87,26 +90,6 @@ const focusFirstField = (form) => {
   if (firstInput) {
     queueMicrotask(() => firstInput.focus());
   }
-};
-
-const setAuthView = (view) => {
-  state.authView = view;
-  if (loginForm) {
-    loginForm.hidden = view !== 'login';
-  }
-  if (registerForm) {
-    registerForm.hidden = view !== 'register';
-  }
-  authTabs.forEach((tab) => {
-    const isActive = tab.dataset.view === view;
-    tab.classList.toggle('is-active', isActive);
-    tab.setAttribute('aria-selected', String(isActive));
-  });
-};
-
-const focusActiveForm = () => {
-  const form = state.authView === 'login' ? loginForm : registerForm;
-  focusFirstField(form);
 };
 
 const clearAuthForms = () => {
@@ -145,19 +128,45 @@ const setOnlineSectionVisible = (visible) => {
   }
 };
 
-const showAuthModal = () => {
-  if (!authModal) return;
-  authModal.hidden = false;
-  authModal.removeAttribute('aria-hidden');
-  document.body.style.overflow = 'hidden';
-  focusActiveForm();
+const setModalVisible = (modal, visible) => {
+  if (!modal) return;
+  if (visible) {
+    modal.hidden = false;
+    modal.removeAttribute('aria-hidden');
+  } else {
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+  }
 };
 
-const hideAuthModal = () => {
-  if (!authModal) return;
-  authModal.hidden = true;
-  authModal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
+const updateBodyScrollLock = () => {
+  const hasVisibleModal = (loginModal && !loginModal.hidden) || (registerModal && !registerModal.hidden);
+  document.body.style.overflow = hasVisibleModal ? 'hidden' : '';
+};
+
+const showLoginModal = () => {
+  state.activeModal = 'login';
+  setModalVisible(loginModal, true);
+  setModalVisible(registerModal, false);
+  clearAuthErrors();
+  updateBodyScrollLock();
+  focusFirstField(loginForm);
+};
+
+const showRegisterModal = () => {
+  state.activeModal = 'register';
+  setModalVisible(registerModal, true);
+  setModalVisible(loginModal, false);
+  clearAuthErrors();
+  updateBodyScrollLock();
+  focusFirstField(registerForm);
+};
+
+const hideAuthModals = () => {
+  state.activeModal = null;
+  setModalVisible(loginModal, false);
+  setModalVisible(registerModal, false);
+  updateBodyScrollLock();
 };
 
 const formatDateTime = (value) => {
@@ -239,10 +248,27 @@ const renderOnlineUsers = (users) => {
       dot.classList.add('is-online');
     }
 
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = user.username;
+    const nameWrapper = document.createElement('div');
+    nameWrapper.className = 'online-users__name';
 
-    identity.append(dot, nameSpan);
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'online-users__username';
+    nameSpan.textContent = user.username;
+    if (user.username && user.username.length > 12) {
+      nameSpan.classList.add('is-long');
+    }
+
+    const presenceSpan = document.createElement('span');
+    presenceSpan.className = 'online-users__presence';
+    if (user.online) {
+      presenceSpan.textContent = '在线';
+      presenceSpan.classList.add('is-online');
+    } else {
+      presenceSpan.textContent = user.lastSeen ? `离线 · ${formatRelativeTime(user.lastSeen)}` : '离线 · 暂无记录';
+    }
+
+    nameWrapper.append(nameSpan, presenceSpan);
+    identity.append(dot, nameWrapper);
 
     const status = document.createElement('div');
     status.className = 'online-users__status';
@@ -250,15 +276,7 @@ const renderOnlineUsers = (users) => {
     const phoneSpan = document.createElement('span');
     phoneSpan.className = 'online-users__phone';
     phoneSpan.textContent = user.phone;
-
-    const stateSpan = document.createElement('span');
-    if (user.online) {
-      stateSpan.textContent = '在线';
-    } else {
-      stateSpan.textContent = user.lastSeen ? `离线 · ${formatRelativeTime(user.lastSeen)}` : '离线 · 暂无记录';
-    }
-
-    status.append(phoneSpan, stateSpan);
+    status.append(phoneSpan);
 
     item.append(identity, status);
     onlineList.append(item);
@@ -322,17 +340,6 @@ const sendHeartbeat = async () => {
   }
 };
 
-const fetchOnlineUsers = async () => {
-  const response = await fetch('/api/online-users', {
-    credentials: 'include',
-  });
-  if (response.status === 401) {
-    throw new HttpError('未登录', response.status);
-  }
-  const data = await response.json().catch(() => ({}));
-  return Array.isArray(data.users) ? data.users : [];
-};
-
 const stopHeartbeat = () => {
   if (state.heartbeatTimer) {
     window.clearInterval(state.heartbeatTimer);
@@ -340,24 +347,104 @@ const stopHeartbeat = () => {
   }
 };
 
-const stopOnlinePolling = () => {
-  if (state.onlineTimer) {
-    window.clearInterval(state.onlineTimer);
-    state.onlineTimer = null;
+const disconnectOnlineSocket = () => {
+  state.shouldReconnectOnline = false;
+  if (state.onlineReconnectTimer) {
+    window.clearTimeout(state.onlineReconnectTimer);
+    state.onlineReconnectTimer = null;
   }
+  const socket = state.onlineSocket;
+  if (socket) {
+    state.onlineSocket = null;
+    try {
+      socket.close(1000, 'logout');
+    } catch (error) {
+      console.warn('关闭在线用户连接失败', error);
+    }
+  }
+};
+
+const scheduleOnlineReconnect = () => {
+  if (!state.shouldReconnectOnline) return;
+  if (state.onlineReconnectTimer) return;
+  state.onlineReconnectTimer = window.setTimeout(() => {
+    state.onlineReconnectTimer = null;
+    connectOnlineSocket();
+  }, 3_000);
+};
+
+const connectOnlineSocket = () => {
+  if (!state.shouldReconnectOnline) return;
+  if (state.onlineReconnectTimer) {
+    window.clearTimeout(state.onlineReconnectTimer);
+    state.onlineReconnectTimer = null;
+  }
+  if (!('WebSocket' in window)) {
+    console.warn('当前浏览器不支持 WebSocket，无法实时更新在线状态。');
+    return;
+  }
+  const existing = state.onlineSocket;
+  if (existing && (existing.readyState === WebSocket.OPEN || existing.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  let socket;
+  try {
+    socket = new WebSocket(`${protocol}://${window.location.host}/ws/online`);
+  } catch (error) {
+    console.warn('创建在线用户连接失败', error);
+    scheduleOnlineReconnect();
+    return;
+  }
+
+  state.onlineSocket = socket;
+
+  socket.addEventListener('open', () => {
+    if (state.onlineReconnectTimer) {
+      window.clearTimeout(state.onlineReconnectTimer);
+      state.onlineReconnectTimer = null;
+    }
+  });
+
+  socket.addEventListener('message', (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data && data.type === 'online_users' && Array.isArray(data.users)) {
+        renderOnlineUsers(data.users);
+      }
+    } catch (error) {
+      console.warn('解析在线用户数据失败', error);
+    }
+  });
+
+  socket.addEventListener('close', () => {
+    state.onlineSocket = null;
+    if (state.shouldReconnectOnline) {
+      scheduleOnlineReconnect();
+    }
+  });
+
+  socket.addEventListener('error', (event) => {
+    console.warn('在线用户连接错误', event);
+    try {
+      socket.close();
+    } catch (error) {
+      console.warn('关闭异常的在线用户连接失败', error);
+    }
+  });
 };
 
 const handleSessionExpired = () => {
   stopHeartbeat();
-  stopOnlinePolling();
+  disconnectOnlineSocket();
   state.user = null;
   renderUserBanner();
   setProtectedAreasVisible(false);
   setOnlineSectionVisible(false);
   clearAuthErrors();
   clearAuthForms();
-  setAuthView('login');
-  showAuthModal();
+  showLoginModal();
 };
 
 const startHeartbeat = () => {
@@ -375,35 +462,18 @@ const startHeartbeat = () => {
   state.heartbeatTimer = window.setInterval(run, HEARTBEAT_INTERVAL);
 };
 
-const startOnlinePolling = () => {
-  stopOnlinePolling();
-  const poll = () => {
-    fetchOnlineUsers()
-      .then((users) => {
-        renderOnlineUsers(users);
-      })
-      .catch((error) => {
-        if (error instanceof HttpError && error.status === 401) {
-          handleSessionExpired();
-        } else {
-          console.warn('获取在线用户失败', error);
-        }
-      });
-  };
-  poll();
-  state.onlineTimer = window.setInterval(poll, ONLINE_REFRESH_INTERVAL);
-};
-
 const handleAuthSuccess = (user) => {
   state.user = user;
   renderUserBanner();
   setProtectedAreasVisible(true);
   setOnlineSectionVisible(true);
-  hideAuthModal();
+  renderOnlineUsers([]);
+  hideAuthModals();
   clearAuthErrors();
   clearAuthForms();
   startHeartbeat();
-  startOnlinePolling();
+  state.shouldReconnectOnline = true;
+  connectOnlineSocket();
 };
 
 const loadSession = async () => {
@@ -421,15 +491,16 @@ const loadSession = async () => {
   }
 };
 
-if (authModal && userBanner) {
-  setAuthView('login');
+if (loginModal && registerModal && userBanner) {
+  openRegisterButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      showRegisterModal();
+    });
+  });
 
-  authTabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      const view = tab.dataset.view || 'login';
-      setAuthView(view);
-      clearAuthErrors();
-      focusActiveForm();
+  openLoginButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      showLoginModal();
     });
   });
 

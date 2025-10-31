@@ -165,20 +165,49 @@ main {
 
 .online-users__item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem 1rem;
   border-radius: 18px;
   background: rgba(15, 23, 42, 0.55);
   border: 1px solid rgba(148, 163, 184, 0.25);
+  flex-wrap: wrap;
 }
 
 .online-users__identity {
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  align-items: flex-start;
+  gap: 0.75rem;
   font-weight: 600;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.online-users__name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.online-users__username {
+  font-size: 1.05rem;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.online-users__username.is-long {
+  font-size: clamp(0.85rem, 2.6vw, 0.95rem);
+}
+
+.online-users__presence {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.online-users__presence.is-online {
+  color: #34d399;
 }
 
 .online-users__phone {
@@ -188,10 +217,12 @@ main {
 
 .online-users__status {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
   font-size: 0.9rem;
   color: var(--text-muted);
+  text-align: right;
 }
 
 .online-users__dot {
@@ -334,6 +365,30 @@ main {
   background: rgba(248, 113, 113, 0.12);
   color: #fecaca;
   font-size: 0.9rem;
+}
+
+.auth-modal__switch {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.auth-modal__switch-button {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.auth-modal__switch-button:hover,
+.auth-modal__switch-button:focus-visible {
+  color: var(--accent-strong);
 }
 
 .nav-grid {

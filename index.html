@@ -36,29 +36,21 @@
   <section class="online-users" data-role="online-users" hidden>
     <div class="online-users__header">
       <h2>实时在线用户</h2>
-      <p class="online-users__hint">状态每 10 秒自动刷新</p>
+      <p class="online-users__hint">状态通过实时连接自动更新</p>
     </div>
     <ul class="online-users__list" data-role="online-user-list" aria-live="polite"></ul>
   </section>
-  <div class="auth-modal" data-role="auth-modal" hidden>
+  <div class="auth-modal" data-role="login-modal" hidden>
     <div
       class="auth-modal__dialog"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="authModalTitle"
+      aria-labelledby="loginModalTitle"
     >
-      <h2 id="authModalTitle">欢迎加入 Wellness Hub</h2>
+      <h2 id="loginModalTitle">登录 Wellness Hub</h2>
       <p class="auth-modal__intro">
-        注册或登录后即可访问所有功能。账户信息仅包含用户名、密码与手机号。
+        欢迎回来！请输入用户名和密码开始管理你的健康工具。
       </p>
-      <div class="auth-modal__tabs" role="tablist">
-        <button type="button" class="auth-modal__tab is-active" data-role="auth-tab" data-view="login" role="tab">
-          登录
-        </button>
-        <button type="button" class="auth-modal__tab" data-role="auth-tab" data-view="register" role="tab">
-          注册
-        </button>
-      </div>
       <form class="auth-form" data-role="login-form" autocomplete="off">
         <label class="auth-form__field">
           <span class="auth-form__label">用户名</span>
@@ -71,7 +63,24 @@
         <p class="auth-form__error" data-role="login-error" hidden aria-live="assertive"></p>
         <button type="submit" class="auth-form__submit">登录</button>
       </form>
-      <form class="auth-form" data-role="register-form" autocomplete="off" hidden>
+      <p class="auth-modal__switch">
+        还没有账号？
+        <button type="button" class="auth-modal__switch-button" data-role="open-register">立即注册</button>
+      </p>
+    </div>
+  </div>
+  <div class="auth-modal" data-role="register-modal" hidden>
+    <div
+      class="auth-modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="registerModalTitle"
+    >
+      <h2 id="registerModalTitle">注册新账号</h2>
+      <p class="auth-modal__intro">
+        只需提供用户名、密码与手机号，即可解锁所有健康管理工具。
+      </p>
+      <form class="auth-form" data-role="register-form" autocomplete="off">
         <label class="auth-form__field">
           <span class="auth-form__label">用户名</span>
           <input
@@ -110,6 +119,10 @@
         <p class="auth-form__error" data-role="register-error" hidden aria-live="assertive"></p>
         <button type="submit" class="auth-form__submit">注册并登录</button>
       </form>
+      <p class="auth-modal__switch">
+        已经拥有账号？
+        <button type="button" class="auth-modal__switch-button" data-role="open-login">返回登录</button>
+      </p>
     </div>
   </div>
   <main data-role="protected-area" hidden>
