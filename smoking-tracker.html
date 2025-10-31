@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>抽烟打卡</title>
+    <link rel="stylesheet" href="css/simple-tracker.css" />
+  </head>
+  <body>
+    <div class="tracker" data-role="page" hidden>
+      <header class="tracker-header">
+        <div class="tracker-header__title">
+          <h1>抽烟打卡</h1>
+          <p>记录每一次点烟的时刻，观察诱因与情绪，逐步调整节奏。</p>
+        </div>
+        <a class="tracker-header__home" href="index.html">返回导航</a>
+      </header>
+
+      <section class="tracker-grid">
+        <article class="tracker-card">
+          <h2>记录抽烟</h2>
+          <p>填写本次抽烟数量与心情感受，帮助你找出触发点。</p>
+          <div class="tracker-card__actions">
+            <div class="input-group">
+              <label for="smoking-count">数量（支）</label>
+              <input
+                type="number"
+                id="smoking-count"
+                min="1"
+                max="20"
+                value="1"
+                data-role="count"
+              />
+            </div>
+            <div class="input-group">
+              <label for="smoking-mood">心情（可选）</label>
+              <select id="smoking-mood" data-role="mood">
+                <option value="">请选择</option>
+                <option value="放松">放松</option>
+                <option value="压力大">压力大</option>
+                <option value="社交">社交</option>
+                <option value="嘴巴寂寞">嘴巴寂寞</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="smoking-note">备注（可选）</label>
+              <textarea id="smoking-note" rows="3" placeholder="记录触发原因或想法" data-role="note"></textarea>
+            </div>
+            <button type="button" data-role="submit">记录抽烟</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="history">
+        <h2>抽烟记录</h2>
+        <p class="status-message" data-role="status" aria-live="polite"></p>
+        <ol class="history__list" data-role="history"></ol>
+      </section>
+    </div>
+
+    <section class="empty" data-role="empty-state" hidden>
+      <div class="empty__card">
+        <h1>需要登录</h1>
+        <p>请返回首页登录后再来记录。</p>
+        <a class="empty__home" href="index.html">返回首页</a>
+      </div>
+    </section>
+
+    <template id="history-item-template">
+      <li class="history__item">
+        <span class="history__time" data-role="item-time"></span>
+        <p class="history__summary" data-role="item-summary"></p>
+        <p class="history__meta" data-role="item-meta"></p>
+      </li>
+    </template>
+
+    <script type="module" src="js/smoking-tracker.js"></script>
+  </body>
+</html>

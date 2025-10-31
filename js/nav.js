@@ -239,6 +239,11 @@ const renderOnlineUsers = (users) => {
     const item = document.createElement('li');
     item.className = 'online-users__item';
 
+    const link = document.createElement('a');
+    link.className = 'online-users__link';
+    link.href = `user-home.html?username=${encodeURIComponent(user.username)}`;
+    link.setAttribute('data-username', user.username);
+
     const identity = document.createElement('div');
     identity.className = 'online-users__identity';
 
@@ -278,7 +283,8 @@ const renderOnlineUsers = (users) => {
     phoneSpan.textContent = user.phone;
     status.append(phoneSpan);
 
-    item.append(identity, status);
+    link.append(identity, status);
+    item.append(link);
     onlineList.append(item);
   });
 };

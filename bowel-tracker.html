@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>排便打卡</title>
+    <link rel="stylesheet" href="css/simple-tracker.css" />
+  </head>
+  <body>
+    <div class="tracker" data-role="page" hidden>
+      <header class="tracker-header">
+        <div class="tracker-header__title">
+          <h1>排便打卡</h1>
+          <p>快速记录大便与小便的频次与感受，帮助你观察作息是否规律。</p>
+        </div>
+        <a class="tracker-header__home" href="index.html">返回导航</a>
+      </header>
+
+      <section class="tracker-grid">
+        <article class="tracker-card" data-type="solid">
+          <h2>大便打卡</h2>
+          <p>关注每日排便状况，记录顺畅度或不适感。</p>
+          <div class="tracker-card__actions">
+            <div class="input-group">
+              <label for="solid-note">备注（可选）</label>
+              <textarea id="solid-note" rows="3" placeholder="例如：顺畅、略干燥" data-role="solid-note"></textarea>
+            </div>
+            <button type="button" data-role="solid-submit">记录大便</button>
+          </div>
+        </article>
+
+        <article class="tracker-card" data-type="liquid">
+          <h2>小便打卡</h2>
+          <p>记录排尿情况，如颜色或次数，帮助判断水分摄入。</p>
+          <div class="tracker-card__actions">
+            <div class="input-group">
+              <label for="liquid-note">备注（可选）</label>
+              <textarea id="liquid-note" rows="3" placeholder="例如：颜色清亮" data-role="liquid-note"></textarea>
+            </div>
+            <button type="button" data-role="liquid-submit">记录小便</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="history">
+        <h2>最近记录</h2>
+        <p class="status-message" data-role="status" aria-live="polite"></p>
+        <ol class="history__list" data-role="history"></ol>
+      </section>
+    </div>
+
+    <section class="empty" data-role="empty-state" hidden>
+      <div class="empty__card">
+        <h1>需要登录</h1>
+        <p>请返回首页登录后再来记录。</p>
+        <a class="empty__home" href="index.html">返回首页</a>
+      </div>
+    </section>
+
+    <template id="history-item-template">
+      <li class="history__item">
+        <span class="history__time" data-role="item-time"></span>
+        <p class="history__summary" data-role="item-summary"></p>
+        <p class="history__meta" data-role="item-meta"></p>
+      </li>
+    </template>
+
+    <script type="module" src="js/bowel-tracker.js"></script>
+  </body>
+</html>

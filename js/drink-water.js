@@ -92,6 +92,24 @@ const state = {
   total: 0
 };
 
+async function logActivity(category, action, details = {}) {
+  try {
+    const response = await fetch('/api/activity', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({ category, action, details })
+    });
+    if (!response.ok && response.status !== 401) {
+      console.warn('记录活动失败', response.status);
+    }
+  } catch (error) {
+    console.warn('记录活动失败', error);
+  }
+}
+
 /********************
  * 元素引用
  ********************/
@@ -161,6 +179,8 @@ function updateProgress() {
 async function onToggleCup(e) {
   const idx = Number(e.currentTarget.getAttribute('data-idx'));
   const cup = state.smalls[idx];
+  const wasFilled = cup.filled;
+  const previousTotal = state.total;
   cup.filled = !cup.filled;
   state.total = state.smalls.filter((c) => c.filled).reduce((s, c) => s + c.vol, 0);
 
@@ -175,6 +195,16 @@ async function onToggleCup(e) {
   renderSmallCups();
   updateProgress();
   renderCalendar(currentMonth);
+
+  if (!wasFilled && cup.filled) {
+    logActivity('hydration', 'drink', { volume: cup.vol });
+  } else if (wasFilled && !cup.filled) {
+    logActivity('hydration', 'undo_drink', { volume: cup.vol });
+  }
+
+  if (previousTotal < state.goal && state.total >= state.goal) {
+    logActivity('hydration', 'goal_reached', { goal: state.goal });
+  }
 }
 
 /********************

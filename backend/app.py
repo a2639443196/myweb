@@ -249,6 +249,60 @@ def create_app() -> Flask:
         users = list_online_users()
         return jsonify({"users": users})
 
+    @app.post("/api/activity")
+    def add_activity() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        payload = request.get_json(silent=True) or {}
+        category = str(payload.get("category", "")).strip()
+        action = str(payload.get("action", "")).strip()
+        details = payload.get("details", {})
+
+        if not category or not action:
+            return jsonify({"error": "缺少必要的活动类型或动作。"}), 400
+
+        if not isinstance(details, dict):
+            return jsonify({"error": "活动详情格式不正确。"}), 400
+
+        try:
+            activity = create_activity(
+                account_id=account["id"],
+                category=category,
+                action=action,
+                details=details,
+            )
+        except sqlite3.Error as error:
+            return jsonify({"error": "记录活动失败", "details": str(error)}), 500
+
+        return jsonify({"activity": serialize_activity(activity)}), 201
+
+    @app.get("/api/users/<username>")
+    def get_user(username: str) -> Any:
+        account = fetch_account_public(username)
+        if not account:
+            return jsonify({"error": "用户不存在"}), 404
+        return jsonify({"user": serialize_account(account)})
+
+    @app.get("/api/users/<username>/activity")
+    def get_user_activity(username: str) -> Any:
+        current = get_current_account()
+        if not current:
+            return jsonify({"error": "未登录"}), 401
+
+        account = fetch_account_public(username)
+        if not account:
+            return jsonify({"error": "用户不存在"}), 404
+
+        category = request.args.get("category")
+        try:
+            activities = list_user_activities(username=username, category=category)
+        except sqlite3.Error as error:
+            return jsonify({"error": "获取活动失败", "details": str(error)}), 500
+
+        return jsonify({"activities": [serialize_activity(item) for item in activities]})
+
     @sock.route("/ws/online")
     def online_users_socket(ws: Any) -> None:
         if online_user_notifier is None:
@@ -328,6 +382,22 @@ def init_db(database_path: Path) -> None:
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_sessions_account ON sessions(account_id)"
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS activities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL,
+                category TEXT NOT NULL,
+                action TEXT NOT NULL,
+                details TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+            )
+            """
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_activities_account_created ON activities(account_id, created_at)"
+        )
         connection.commit()
 
 
@@ -385,6 +455,17 @@ def fetch_account_by_session_token(token: str) -> Optional[Dict[str, Any]]:
             WHERE sessions.token = ?
             """,
             (token,),
+        ).fetchone()
+    if not row:
+        return None
+    return dict(row)
+
+
+def fetch_account_public(username: str) -> Optional[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        row = connection.execute(
+            "SELECT id, username, phone, created_at FROM accounts WHERE username = ?",
+            (username,),
         ).fetchone()
     if not row:
         return None
@@ -470,10 +551,93 @@ def list_online_users() -> list[Dict[str, Any]]:
 
 def serialize_account(account: Dict[str, Any]) -> Dict[str, Any]:
     return {
+        "id": account.get("id"),
         "username": account["username"],
         "phone": account["phone"],
         "createdAt": account["created_at"],
     }
+
+
+def create_activity(account_id: int, category: str, action: str, details: Dict[str, Any]) -> Dict[str, Any]:
+    timestamp = datetime.now(timezone.utc).isoformat()
+    details_json = json.dumps(details, ensure_ascii=False)
+    with get_db_connection() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO activities (account_id, category, action, details, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (account_id, category, action, details_json, timestamp),
+        )
+        activity_id = cursor.lastrowid
+        connection.commit()
+
+    return {
+        "id": activity_id,
+        "account_id": account_id,
+        "category": category,
+        "action": action,
+        "details": details,
+        "created_at": timestamp,
+    }
+
+
+def list_user_activities(username: str, category: Optional[str] = None, limit: int = 200) -> list[Dict[str, Any]]:
+    sql = (
+        """
+        SELECT activities.id, activities.account_id, activities.category, activities.action, activities.details, activities.created_at
+        FROM activities
+        JOIN accounts ON accounts.id = activities.account_id
+        WHERE accounts.username = ?
+        """
+    )
+    params: list[Any] = [username]
+    if category:
+        sql += " AND activities.category = ?"
+        params.append(category)
+
+    sql += " ORDER BY activities.created_at DESC, activities.id DESC LIMIT ?"
+    params.append(limit)
+
+    items: list[Dict[str, Any]] = []
+    with get_db_connection() as connection:
+        rows = connection.execute(sql, tuple(params)).fetchall()
+
+    for row in rows:
+        details_raw = row["details"]
+        try:
+            details = json.loads(details_raw) if details_raw else {}
+        except json.JSONDecodeError:
+            details = {}
+        items.append(
+            {
+                "id": row["id"],
+                "account_id": row["account_id"],
+                "category": row["category"],
+                "action": row["action"],
+                "details": details,
+                "created_at": row["created_at"],
+            }
+        )
+
+    return items
+
+
+def serialize_activity(activity: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "id": activity.get("id"),
+        "category": activity.get("category"),
+        "action": activity.get("action"),
+        "details": activity.get("details", {}),
+        "createdAt": activity.get("created_at"),
+    }
+
+
+def get_current_account() -> Optional[Dict[str, Any]]:
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not token:
+        return None
+    return fetch_account_by_session_token(token)
 
 
 if __name__ == "__main__":
