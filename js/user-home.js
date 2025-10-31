@@ -14,6 +14,9 @@ const emptyMessage = document.querySelector('[data-role="empty-message"]');
 const nameEl = document.querySelector('[data-role="username"]');
 const phoneEl = document.querySelector('[data-role="phone"]');
 const createdEl = document.querySelector('[data-role="created"]');
+const timelineSection = document.querySelector('[data-role="timeline-section"]');
+const timelineHint = timelineSection?.querySelector('.timeline__hint');
+const defaultTimelineHint = timelineHint?.textContent ?? '';
 const timelineEl = document.querySelector('[data-role="timeline"]');
 const template = document.getElementById('timeline-item-template');
 
@@ -32,6 +35,9 @@ function showEmpty(message) {
 }
 
 function showPage() {
+  if (timelineSection) {
+    timelineSection.removeAttribute('data-empty');
+  }
   if (page) {
     page.hidden = false;
     page.removeAttribute('aria-hidden');
@@ -106,7 +112,17 @@ function renderTimeline(activities) {
     empty.className = 'timeline-item';
     empty.innerHTML = '<div class="timeline-item__time">--:--</div><div class="timeline-item__content"><p class="timeline-item__summary">暂无活动</p><p class="timeline-item__meta">快去记录一点内容吧。</p></div>';
     timelineEl.append(empty);
+    if (timelineSection) {
+      timelineSection.setAttribute('data-empty', 'true');
+    }
+    if (timelineHint) {
+      timelineHint.textContent = '这个人的主页还没有任何动态';
+    }
     return;
+  }
+
+  if (timelineHint) {
+    timelineHint.textContent = defaultTimelineHint;
   }
 
   activities.forEach((activity) => {
@@ -133,6 +149,28 @@ function renderTimeline(activities) {
   });
 }
 
+function populateProfile(profile = {}) {
+  if (nameEl) {
+    nameEl.textContent = profile.username || username || '未知用户';
+  }
+  if (phoneEl) {
+    phoneEl.textContent = profile.phone || '暂无联系方式';
+  }
+  if (createdEl) {
+    if (profile.createdAt) {
+      createdEl.textContent = formatDateTime(profile.createdAt);
+    } else {
+      createdEl.textContent = '暂无加入时间';
+    }
+  }
+}
+
+function renderEmptyProfile() {
+  populateProfile({ username });
+  renderTimeline([]);
+  showPage();
+}
+
 async function init() {
   if (!username) {
     showEmpty('缺少用户名参数。');
@@ -142,19 +180,11 @@ async function init() {
   try {
     const profile = await fetchUserProfile(username);
     if (!profile) {
-      showEmpty('没有找到对应的用户。');
+      renderEmptyProfile();
       return;
     }
 
-    if (nameEl) {
-      nameEl.textContent = profile.username;
-    }
-    if (phoneEl) {
-      phoneEl.textContent = profile.phone;
-    }
-    if (createdEl) {
-      createdEl.textContent = formatDateTime(profile.createdAt);
-    }
+    populateProfile(profile);
 
     const activities = await fetchUserActivity(username);
     renderTimeline(activities);
