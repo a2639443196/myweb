@@ -168,16 +168,11 @@ main {
 }
 
 .online-users__link {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  display: block;
   padding: 0.75rem 1rem;
   border-radius: 18px;
   background: rgba(15, 23, 42, 0.55);
   border: 1px solid rgba(148, 163, 184, 0.25);
-  flex-wrap: wrap;
-  width: 100%;
   color: inherit;
   text-decoration: none;
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -191,54 +186,57 @@ main {
   outline: none;
 }
 
-.online-users__identity {
+.online-users__details {
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  font-weight: 600;
-  flex: 1 1 220px;
-  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.online-users__name {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
+.online-users__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.65);
+  font-size: 0.85rem;
+  line-height: 1.2;
+  color: var(--text-muted);
+}
+
+.online-users__chip--identity {
+  font-weight: 600;
+  color: var(--text-main);
+  padding-right: 0.75rem;
 }
 
 .online-users__username {
   font-size: 1.05rem;
   line-height: 1.2;
+}
+
+.online-users__chip--identity .online-users__username {
   word-break: break-word;
 }
 
 .online-users__username.is-long {
-  font-size: clamp(0.85rem, 2.6vw, 0.95rem);
+  font-size: clamp(0.85rem, 2.8vw, 0.95rem);
 }
 
-.online-users__presence {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+.online-users__chip--state {
+  min-width: 0;
 }
 
-.online-users__presence.is-online {
+.online-users__chip--state.is-online {
   color: #34d399;
+  border-color: rgba(52, 211, 153, 0.3);
+  background: rgba(15, 118, 110, 0.2);
 }
 
-.online-users__phone {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.online-users__status {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  text-align: right;
+.online-users__chip--phone {
+  font-variant-numeric: tabular-nums;
 }
 
 .online-users__dot {
@@ -256,18 +254,30 @@ main {
 
 @media (max-width: 640px) {
   .online-users__link {
-    flex-direction: column;
-    align-items: stretch;
+    padding: 0.65rem 0.75rem;
   }
 
-  .online-users__identity {
-    align-items: center;
+  .online-users__details {
+    gap: 0.4rem;
   }
 
-  .online-users__status {
-    align-items: flex-start;
-    text-align: left;
-    width: 100%;
+  .online-users__chip {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (min-width: 641px) {
+  .online-users__details {
+    flex-wrap: nowrap;
+  }
+
+  .online-users__chip--state {
+    margin-left: auto;
+  }
+
+  .online-users__chip--phone {
+    margin-left: 0.25rem;
   }
 }
 
