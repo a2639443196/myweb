@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>个人主页</title>
+    <link rel="stylesheet" href="css/user-home.css" />
+  </head>
+  <body>
+    <div class="page" data-role="page" hidden>
+      <header class="profile" data-role="profile">
+        <div class="profile__meta">
+          <h1 class="profile__name" data-role="username"></h1>
+          <p class="profile__phone" data-role="phone"></p>
+          <p class="profile__joined">
+            加入时间：<span data-role="created"></span>
+          </p>
+        </div>
+        <div class="profile__actions">
+          <a class="profile__home" href="index.html">返回导航</a>
+        </div>
+      </header>
+
+      <main class="timeline" data-role="timeline-section">
+        <div class="timeline__header">
+          <h2>今日动态</h2>
+          <p class="timeline__hint">按时间倒序展示最近 200 条活动</p>
+        </div>
+        <ol class="timeline__list" data-role="timeline" aria-live="polite"></ol>
+      </main>
+    </div>
+
+    <section class="empty" data-role="empty-state" hidden>
+      <div class="empty__card">
+        <h1>无法查看主页</h1>
+        <p data-role="empty-message"></p>
+        <a class="empty__home" href="index.html">返回首页</a>
+      </div>
+    </section>
+
+    <template id="timeline-item-template">
+      <li class="timeline-item">
+        <div class="timeline-item__time" data-role="item-time"></div>
+        <div class="timeline-item__content">
+          <p class="timeline-item__summary" data-role="item-summary"></p>
+          <p class="timeline-item__meta" data-role="item-meta"></p>
+        </div>
+      </li>
+    </template>
+
+    <script type="module" src="js/user-home.js"></script>
+  </body>
+</html>
