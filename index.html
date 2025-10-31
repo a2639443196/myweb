@@ -15,6 +15,97 @@
       让你无论在电脑还是手机上都能迅速找到需要的页面。
     </p>
   </header>
+  <section class="user-profile" data-role="user-banner" hidden>
+    <div class="user-profile__content">
+      <h2>欢迎回来，<span data-role="user-name"></span></h2>
+      <p class="user-profile__goal">
+        <span aria-hidden="true">🎯</span>
+        <span data-role="user-goal"></span>
+      </p>
+      <dl class="user-profile__metrics">
+        <div>
+          <dt>重点关注</dt>
+          <dd data-role="user-focus"></dd>
+        </div>
+        <div>
+          <dt>给自己的话</dt>
+          <dd data-role="user-tagline"></dd>
+        </div>
+      </dl>
+    </div>
+    <button type="button" class="user-profile__manage" data-role="manage-profile">
+      管理档案
+    </button>
+  </section>
+  <div class="user-modal" data-role="user-modal" hidden>
+    <div class="user-modal__overlay" data-role="close-modal" tabindex="-1"></div>
+    <div class="user-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+      <button class="user-modal__close" type="button" data-role="close-modal" aria-label="关闭">
+        ×
+      </button>
+      <h2 id="userModalTitle">欢迎来到 Wellness Hub</h2>
+      <p class="user-modal__intro">创建你的个人档案或选择本地已保存的用户。</p>
+      <div class="user-modal__panes">
+        <section class="user-modal__existing" data-role="existing-users" hidden>
+          <h3>选择已有用户</h3>
+          <label class="user-modal__field">
+            <span class="user-modal__label">我的档案</span>
+            <select data-role="user-select"></select>
+          </label>
+          <button type="button" class="user-modal__action" data-role="activate-user">加载档案</button>
+        </section>
+        <section class="user-modal__create">
+          <h3>创建新档案</h3>
+          <form data-role="user-form" class="user-modal__form">
+            <label class="user-modal__field">
+              <span class="user-modal__label">昵称</span>
+              <input
+                name="name"
+                type="text"
+                required
+                maxlength="40"
+                autocomplete="off"
+                placeholder="例如：活力小分队"
+              />
+            </label>
+            <label class="user-modal__field">
+              <span class="user-modal__label">健康目标</span>
+              <input
+                name="goal"
+                type="text"
+                required
+                maxlength="120"
+                autocomplete="off"
+                placeholder="例如：30 天重启睡眠节奏"
+              />
+            </label>
+            <label class="user-modal__field">
+              <span class="user-modal__label">重点关注</span>
+              <input
+                name="focus"
+                type="text"
+                required
+                maxlength="120"
+                autocomplete="off"
+                placeholder="例如：保持每日 2000 ml 饮水"
+              />
+            </label>
+            <label class="user-modal__field">
+              <span class="user-modal__label">给自己的话</span>
+              <input
+                name="tagline"
+                type="text"
+                maxlength="120"
+                autocomplete="off"
+                placeholder="例如：循序渐进，坚持最棒！"
+              />
+            </label>
+            <button type="submit" class="user-modal__action">保存并开始</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </div>
   <main>
     <div class="nav-grid">
       <a class="nav-card" href="drink-water.html">
