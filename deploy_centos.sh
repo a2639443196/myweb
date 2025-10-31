@@ -31,7 +31,7 @@ else
   sudo yum install -y python3 python3-virtualenv
 fi
 
-python3 -m venv "${REMOTE_DIR}/venv"
+python3.8 -m venv "${REMOTE_DIR}/venv"
 source "${REMOTE_DIR}/venv/bin/activate"
 pip install --upgrade pip
 pip install -r "${REMOTE_DIR}/backend/requirements.txt"
