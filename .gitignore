@@ -1,0 +1,6 @@
+backend/wellness.db
+backend/__pycache__/
+*.pyc
+.env
+.venv/
+__pycache__/

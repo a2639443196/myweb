@@ -187,6 +187,13 @@ main {
   line-height: 1.6;
 }
 
+.user-modal__note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .user-modal__panes {
   display: grid;
   gap: 1.6rem;
@@ -243,6 +250,16 @@ main {
 .user-modal__action:hover,
 .user-modal__action:focus-visible {
   filter: brightness(1.05);
+}
+
+.user-modal__error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.12);
+  color: #fecaca;
+  font-size: 0.9rem;
 }
 
 .nav-grid {
