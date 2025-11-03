@@ -55,7 +55,17 @@ install_dependencies() {
 start_service() {
     echo "正在启动后端服务..."
     cd "$PROJECT_ROOT"
-    exec $PYTHON_BIN -m backend.app
+    local log_dir="$PROJECT_ROOT/logs"
+    mkdir -p "$log_dir"
+    local log_file="$log_dir/backend.log"
+    nohup $PYTHON_BIN -m backend.app >>"$log_file" 2>&1 &
+    local pid=$!
+    if kill -0 "$pid" >/dev/null 2>&1; then
+        echo "后端服务已在后台启动 (PID: $pid)，日志输出到 $log_file"
+    else
+        echo "后端服务启动失败，请检查日志 $log_file" >&2
+        exit 1
+    fi
 }
 
 # 执行流程
