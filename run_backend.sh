@@ -9,7 +9,6 @@ if [[ -z "${PYTHON_BIN}" ]]; then
     exit 1
 fi
 
-# 停止旧进程
 stop_service() {
     local stopped=0
     if pkill -f "python[0-9.]* -m backend.app" >/dev/null 2>&1; then
@@ -25,7 +24,6 @@ stop_service() {
     fi
 }
 
-# 释放8000端口
 kill_port_service() {
     local port=8000
     echo "检查端口 ${port} ..."
@@ -44,32 +42,44 @@ kill_port_service() {
     fi
 }
 
-# 安装依赖
 install_dependencies() {
     echo "正在安装依赖..."
     $PYTHON_BIN -m pip install --upgrade pip setuptools wheel
     $PYTHON_BIN -m pip install -r "$PROJECT_ROOT/backend/requirements.txt"
 }
 
-# 启动服务
-start_service() {
-    echo "正在启动后端服务..."
-    cd "$PROJECT_ROOT"
-    local log_dir="$PROJECT_ROOT/logs"
-    mkdir -p "$log_dir"
-    local log_file="$log_dir/backend.log"
-    nohup $PYTHON_BIN -m backend.app >>"$log_file" 2>&1 &
-    local pid=$!
-    if kill -0 "$pid" >/dev/null 2>&1; then
-        echo "后端服务已在后台启动 (PID: $pid)，日志输出到 $log_file"
-    else
-        echo "后端服务启动失败，请检查日志 $log_file" >&2
-        exit 1
-    fi
+create_systemd_service() {
+    local service_file="/etc/systemd/system/backend.service"
+    echo "写入 systemd 服务文件：$service_file"
+
+    cat > "$service_file" <<EOF
+[Unit]
+Description=Backend Python Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$PROJECT_ROOT
+ExecStart=$PYTHON_BIN -m backend.app
+Restart=always
+RestartSec=3
+User=root
+StandardOutput=append:$PROJECT_ROOT/backend.log
+StandardError=append:$PROJECT_ROOT/backend.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    echo "加载并启动服务..."
+    systemctl daemon-reload
+    systemctl enable backend.service
+    systemctl restart backend.service
+    systemctl status backend.service --no-pager
 }
 
 # 执行流程
 stop_service
 kill_port_service
 install_dependencies
-start_service
+create_systemd_service
