@@ -3,14 +3,31 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON_BIN=$(command -v python3.8 || true)
+if [[ -z "${PYTHON_BIN}" ]]; then
+    PYTHON_BIN=$(command -v python3 || true)
+fi
+LOG_FILE="$PROJECT_ROOT/backend.log"
+PID_FILE="$PROJECT_ROOT/backend.pid"
 
 if [[ -z "${PYTHON_BIN}" ]]; then
-    echo "未找到 python3.8，请先安装后再运行此脚本。" >&2
+    echo "未找到可用的 Python 解释器 (python3.8 或 python3)，请先安装后再运行此脚本。" >&2
     exit 1
 fi
 
 stop_service() {
     local stopped=0
+
+    if [[ -f "$PID_FILE" ]]; then
+        local pid
+        pid=$(cat "$PID_FILE")
+        if kill -0 "$pid" >/dev/null 2>&1; then
+            kill "$pid" >/dev/null 2>&1 || true
+            wait "$pid" 2>/dev/null || true
+            stopped=1
+        fi
+        rm -f "$PID_FILE"
+    fi
+
     if pkill -f "python[0-9.]* -m backend.app" >/dev/null 2>&1; then
         stopped=1
     fi
@@ -44,42 +61,47 @@ kill_port_service() {
 
 install_dependencies() {
     echo "正在安装依赖..."
-    $PYTHON_BIN -m pip install --upgrade pip setuptools wheel
-    $PYTHON_BIN -m pip install -r "$PROJECT_ROOT/backend/requirements.txt"
+    if ! $PYTHON_BIN -m pip install --upgrade pip setuptools wheel; then
+        echo "警告：pip/setuptools/wheel 升级失败，将继续使用现有版本。" >&2
+    fi
+    if ! $PYTHON_BIN -m pip install -r "$PROJECT_ROOT/backend/requirements.txt"; then
+        echo "警告：项目依赖安装失败，请检查网络或手动安装缺失依赖。" >&2
+        local missing_modules
+        missing_modules=$($PYTHON_BIN - <<'PY'
+import importlib.util
+modules = ["flask", "flask_sock", "simple_websocket", "gunicorn", "yaml"]
+missing = [m for m in modules if importlib.util.find_spec(m) is None]
+print(" ".join(missing))
+PY
+)
+        if [[ -n "${missing_modules// }" ]]; then
+            echo "错误：检测到缺失依赖：${missing_modules}。请手动安装后重新运行脚本。" >&2
+            exit 1
+        fi
+    fi
 }
 
-create_systemd_service() {
-    local service_file="/etc/systemd/system/backend.service"
-    echo "写入 systemd 服务文件：$service_file"
-
-    cat > "$service_file" <<EOF
-[Unit]
-Description=Backend Python Service
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=$PROJECT_ROOT
-ExecStart=$PYTHON_BIN -m backend.app
-Restart=always
-RestartSec=3
-User=root
-StandardOutput=append:$PROJECT_ROOT/backend.log
-StandardError=append:$PROJECT_ROOT/backend.log
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    echo "加载并启动服务..."
-    systemctl daemon-reload
-    systemctl enable backend.service
-    systemctl restart backend.service
-    systemctl status backend.service --no-pager
+start_backend() {
+    echo "以后台模式启动服务..."
+    rm -f "$PID_FILE"
+    mkdir -p "$(dirname "$LOG_FILE")"
+    (
+        cd "$PROJECT_ROOT"
+        nohup "$PYTHON_BIN" -m backend.app >"$LOG_FILE" 2>&1 &
+        echo $! >"$PID_FILE"
+    )
+    local pid
+    pid=$(cat "$PID_FILE")
+    sleep 1
+    if ! ps -p "$pid" >/dev/null 2>&1; then
+        echo "后端服务启动失败，请查看日志：$LOG_FILE" >&2
+        exit 1
+    fi
+    echo "后端服务已启动 (PID: $pid)，日志输出至 $LOG_FILE。"
 }
 
 # 执行流程
 stop_service
 kill_port_service
 install_dependencies
-create_systemd_service
+start_backend

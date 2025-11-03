@@ -4,3 +4,5 @@ backend/__pycache__/
 .env
 .venv/
 __pycache__/
+backend.log
+backend.pid
