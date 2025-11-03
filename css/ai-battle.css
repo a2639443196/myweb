@@ -11,6 +11,11 @@
   --radius-md: 14px;
   --shadow-lg: 0 32px 64px -40px rgba(15, 23, 42, 0.8);
   --shadow-sm: 0 16px 32px -24px rgba(15, 23, 42, 0.6);
+  --doubao: linear-gradient(135deg, rgba(56, 189, 248, 0.95), rgba(56, 189, 248, 0.7));
+  --deepseek: linear-gradient(135deg, rgba(249, 115, 22, 0.95), rgba(234, 88, 12, 0.6));
+  --qianwen: linear-gradient(135deg, rgba(124, 58, 237, 0.9), rgba(139, 92, 246, 0.6));
+  --gpt: linear-gradient(135deg, rgba(74, 222, 128, 0.9), rgba(34, 197, 94, 0.6));
+  --gemini: linear-gradient(135deg, rgba(129, 140, 248, 0.9), rgba(59, 130, 246, 0.6));
 }
 
 * {
@@ -44,6 +49,92 @@ body {
   justify-content: space-between;
   align-items: flex-start;
   gap: 24px;
+}
+
+.lineup-panel {
+  background: rgba(15, 23, 42, 0.55);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: var(--shadow-sm);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lineup-panel__header h2 {
+  margin: 0 0 12px;
+  font-size: 1.4rem;
+}
+
+.lineup-panel__header p {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.78);
+  line-height: 1.7;
+  max-width: 920px;
+}
+
+.lineup-panel__grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.lineup-card {
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.62);
+  position: relative;
+  overflow: hidden;
+}
+
+.lineup-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background: var(--panel-border);
+  transition: opacity 180ms ease;
+}
+
+.lineup-card h3 {
+  position: relative;
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.lineup-card p {
+  position: relative;
+  margin: 0;
+  color: rgba(148, 163, 184, 0.92);
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+
+.lineup-card:hover::before {
+  opacity: 0.55;
+}
+
+.lineup-card[data-provider="doubao"]::before {
+  background: var(--doubao);
+}
+
+.lineup-card[data-provider="deepseekr1"]::before {
+  background: var(--deepseek);
+}
+
+.lineup-card[data-provider="qianwen"]::before {
+  background: var(--qianwen);
+}
+
+.lineup-card[data-provider="gpt"]::before {
+  background: var(--gpt);
+}
+
+.lineup-card[data-provider="gemini"]::before {
+  background: var(--gemini);
 }
 
 .create-header h1 {
@@ -319,6 +410,70 @@ body {
   border-radius: 999px;
   background: rgba(56, 189, 248, 0.16);
   color: var(--accent);
+  font-weight: 600;
+}
+
+.agent-card__strengths {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.agent-card__strengths li {
+  background: rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  color: rgba(226, 232, 240, 0.86);
+  letter-spacing: 0.01em;
+}
+
+.agent-card[data-provider="doubao"] {
+  border-color: rgba(56, 189, 248, 0.42);
+}
+
+.agent-card[data-provider="doubao"] .agent-card__badge {
+  background: var(--doubao);
+  color: #0b1120;
+}
+
+.agent-card[data-provider="deepseekr1"] {
+  border-color: rgba(234, 88, 12, 0.45);
+}
+
+.agent-card[data-provider="deepseekr1"] .agent-card__badge {
+  background: var(--deepseek);
+  color: #0b1120;
+}
+
+.agent-card[data-provider="qianwen"] {
+  border-color: rgba(139, 92, 246, 0.45);
+}
+
+.agent-card[data-provider="qianwen"] .agent-card__badge {
+  background: var(--qianwen);
+  color: #f8fafc;
+}
+
+.agent-card[data-provider="gpt"] {
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+.agent-card[data-provider="gpt"] .agent-card__badge {
+  background: var(--gpt);
+  color: #0b1120;
+}
+
+.agent-card[data-provider="gemini"] {
+  border-color: rgba(59, 130, 246, 0.45);
+}
+
+.agent-card[data-provider="gemini"] .agent-card__badge {
+  background: var(--gemini);
+  color: #0b1120;
 }
 
 .agent-card--checked {
@@ -381,6 +536,10 @@ body {
   .step-card {
     min-width: 240px;
   }
+
+  .lineup-panel {
+    padding: 22px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -394,5 +553,9 @@ body {
 
   .agent-card {
     padding: 16px 16px 16px 48px;
+  }
+
+  .lineup-panel__grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 }
