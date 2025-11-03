@@ -2,10 +2,10 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PYTHON_BIN=$(command -v python3.10 || true)
+PYTHON_BIN="/usr/local/bin/python3.10"
 
-if [[ -z "${PYTHON_BIN}" ]]; then
-    echo "未找到 python3.10，请先安装后再运行此脚本。" >&2
+if [[ ! -x "$PYTHON_BIN" ]]; then
+    echo "未找到 $PYTHON_BIN，请先安装 Python 3.10。" >&2
     exit 1
 fi
 
@@ -78,7 +78,6 @@ EOF
     systemctl status backend.service --no-pager
 }
 
-# 执行流程
 stop_service
 kill_port_service
 install_dependencies
