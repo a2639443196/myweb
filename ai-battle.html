@@ -3,82 +3,131 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI 博弈控制台</title>
+  <title>AI 博弈房间创建</title>
   <link rel="stylesheet" href="css/ai-battle.css" />
 </head>
 <body>
-  <div class="page">
-    <header class="page__header">
+  <div class="create-page">
+    <header class="create-header">
       <div>
-        <h1>AI 博弈控制台</h1>
-        <p>创建 4-5 AI 的单房间博弈，驱动长连接实时观战。</p>
+        <p class="create-breadcrumb">AI Battle Console</p>
+        <h1>创建新的 AI 博弈房间</h1>
+        <p class="create-tagline">
+          设定明确的目标、规则与限制，邀请 4-5 个 AI 参与。房间创建成功后会自动进入首回合，
+          你可以在聊天室中实时观战全程。
+        </p>
       </div>
-      <a class="page__home" href="index.html" aria-label="返回首页">🏠 返回首页</a>
+      <nav class="create-actions" aria-label="页面导航">
+        <a class="create-actions__link" href="index.html">🏠 返回首页</a>
+        <a class="create-actions__link create-actions__link--primary" href="ai-battle-room.html">进入聊天室</a>
+      </nav>
     </header>
 
-    <section class="notice" data-role="auth-warning" hidden>
-      <p>请先登录账号后再创建或观战房间。</p>
+    <section class="auth-warning" data-role="auth-warning" hidden>
+      <p>请先登录账号后再创建博弈房间。</p>
     </section>
 
-    <main class="grid">
-      <section class="card" data-role="creation-section">
-        <h2>创建新房间</h2>
-        <p class="card__hint">选择 4-5 个 AI，并填写游戏名称与规则。房间存在时仅裁判可操作。</p>
-        <form data-role="create-form" autocomplete="off">
-          <label class="field">
-            <span class="field__label">游戏名称</span>
-            <input name="gameName" required maxlength="60" placeholder="例如：银河策略会议" />
-          </label>
-          <label class="field">
-            <span class="field__label">游戏规则</span>
-            <textarea name="gameRules" rows="6" required placeholder="请描述清晰的胜负判断、回合流程等规则"></textarea>
-            <button type="button" class="field__template" data-role="fill-template">使用示例模版</button>
-          </label>
-          <fieldset class="field">
-            <legend class="field__label">选择 AI（4-5 个）</legend>
-            <div class="field__options" data-role="agent-list"></div>
-          </fieldset>
-          <div class="actions">
-            <button type="submit" class="btn-primary">创建房间并开始</button>
-          </div>
-          <p class="form-error" data-role="create-error" hidden></p>
-        </form>
-      </section>
+    <main class="create-layout">
+      <aside class="create-sidebar" aria-label="创建步骤">
+        <div class="step-card">
+          <span class="step-card__index">01</span>
+          <h2>定义博弈场景</h2>
+          <p>
+            设定博弈目标、流程与胜利条件。规则越清晰，AI 的表现越精准，后续分析也更容易。
+          </p>
+        </div>
+        <div class="step-card">
+          <span class="step-card__index">02</span>
+          <h2>挑选参与 AI</h2>
+          <p>从注册的智能体中挑选 4-5 名参赛者，注意角色互补性与风格差异。</p>
+        </div>
+        <div class="step-card">
+          <span class="step-card__index">03</span>
+          <h2>发布首回合提示</h2>
+          <p>创建后可选填开场白。系统会立即触发第一回合，所有 AI 顺序发言。</p>
+        </div>
+      </aside>
 
-      <section class="card card--stretch" data-role="battle-section" hidden>
-        <header class="battle__header">
-          <div>
-            <h2 data-role="room-title"></h2>
-            <p data-role="room-rules"></p>
-          </div>
-          <div class="battle__meta">
-            <span>裁判：<strong data-role="judge-name"></strong></span>
-            <span>回合：<strong data-role="round"></strong></span>
-          </div>
+      <section class="create-form-card">
+        <header class="create-form-card__header">
+          <h2>房间配置</h2>
+          <button type="button" class="template-button" data-role="fill-template">填充示例模版</button>
         </header>
 
-        <div class="battle__body">
-          <aside class="battle__participants">
-            <h3>参与 AI</h3>
-            <ul data-role="participant-list"></ul>
-            <div class="battle__controls" data-role="judge-controls" hidden>
-              <textarea data-role="judge-message" rows="3" placeholder="裁判提示（可选）"></textarea>
-              <div class="battle__buttons">
-                <button type="button" class="btn-primary" data-role="trigger-round">触发下一回合</button>
-                <button type="button" class="btn-danger" data-role="close-room">结束房间</button>
-              </div>
-              <p class="form-error" data-role="round-error" hidden></p>
-            </div>
-          </aside>
+        <form class="create-form" data-role="create-form" autocomplete="off">
+          <div class="field-group">
+            <label class="field">
+              <span class="field__label">博弈名称</span>
+              <input name="gameName" required maxlength="60" placeholder="例如：火星殖民议事会" />
+            </label>
+          </div>
 
-          <section class="battle__chat" aria-live="polite">
-            <ul class="chat-log" data-role="chat-log"></ul>
-          </section>
-        </div>
+          <div class="field-grid">
+            <label class="field">
+              <span class="field__label">博弈目标</span>
+              <textarea
+                name="gameObjective"
+                rows="4"
+                required
+                placeholder="参与方需要达成什么共同或对抗目标？请描述初始局势与关键背景。"
+              ></textarea>
+            </label>
+            <label class="field">
+              <span class="field__label">关键规则</span>
+              <textarea
+                name="gameRules"
+                rows="4"
+                required
+                placeholder="列出回合顺序、允许/禁止的行动，以及裁判需要关注的事项。"
+              ></textarea>
+            </label>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span class="field__label">胜利条件</span>
+              <textarea
+                name="winCondition"
+                rows="3"
+                required
+                placeholder="列出博弈结束或胜利的判断标准，例如资源达成、投票结果等。"
+              ></textarea>
+            </label>
+            <label class="field">
+              <span class="field__label">限制与资源（可选）</span>
+              <textarea
+                name="specialNotes"
+                rows="3"
+                placeholder="例如时间限制、可使用的工具、惩罚机制或额外说明。"
+              ></textarea>
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field__label">首回合开场提示（可选）</span>
+            <textarea
+              name="openingBrief"
+              rows="3"
+              placeholder="向所有 AI 广播的局势梳理、问题或挑战，系统会以此触发第一回合。"
+            ></textarea>
+          </label>
+
+          <fieldset class="field field--agents">
+            <legend class="field__label">选择参赛 AI（4-5 名）</legend>
+            <p class="field__hint">点击卡片即可勾选，鼠标悬停可查看简介。</p>
+            <div class="agent-grid" data-role="agent-list"></div>
+          </fieldset>
+
+          <p class="form-error" data-role="create-error" hidden></p>
+
+          <div class="create-form__actions">
+            <button type="submit" class="btn-primary">创建房间并进入首回合</button>
+          </div>
+        </form>
       </section>
     </main>
   </div>
 
-  <script type="module" src="js/ai-battle.js"></script>
+  <script type="module" src="js/ai-battle-create.js"></script>
 </body>
 </html>

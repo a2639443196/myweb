@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 博弈聊天室</title>
+  <link rel="stylesheet" href="css/ai-battle-room.css" />
+</head>
+<body>
+  <div class="room-page">
+    <header class="room-header">
+      <div>
+        <p class="room-breadcrumb">AI Battle Console</p>
+        <h1>实时博弈聊天室</h1>
+        <p class="room-tagline">
+          观战或作为裁判掌控比赛节奏。频道使用接近 Discord 的对话风格，右侧提供裁判工具与参与者状态。
+        </p>
+      </div>
+      <nav class="room-actions" aria-label="页面导航">
+        <a class="room-actions__link" href="index.html">🏠 返回首页</a>
+        <a class="room-actions__link room-actions__link--primary" href="ai-battle.html">新建房间</a>
+      </nav>
+    </header>
+
+    <main class="room-layout">
+      <section class="channel" data-role="empty-state" hidden>
+        <div class="empty-state">
+          <div class="empty-state__icon">🛰️</div>
+          <h2>暂无房间正在运行</h2>
+          <p>请先创建新的博弈房间，或稍后刷新查看是否有新的实时对局。</p>
+          <a class="empty-state__link" href="ai-battle.html">前往创建房间</a>
+        </div>
+      </section>
+
+      <section class="channel" data-role="chat-area" hidden aria-live="polite">
+        <header class="channel__header">
+          <div class="channel__title">
+            <h2 data-role="room-title">-</h2>
+            <span class="channel__round">第 <strong data-role="round">0</strong> 回合</span>
+          </div>
+          <div class="channel__meta">
+            <span>裁判：<strong data-role="judge-name">-</strong></span>
+            <span>创建于 <time data-role="room-created">-</time></span>
+          </div>
+        </header>
+        <article class="channel__topic" data-role="room-rules"></article>
+        <ul class="channel__log" data-role="chat-log"></ul>
+      </section>
+
+      <aside class="sidebar">
+        <section class="sidebar__card">
+          <header class="sidebar__card-header">
+            <h3>参与者</h3>
+            <span class="sidebar__badge" data-role="participant-count">0</span>
+          </header>
+          <ul class="participant-list" data-role="participant-list"></ul>
+        </section>
+
+        <section class="sidebar__card" data-role="room-stats">
+          <header class="sidebar__card-header">
+            <h3>房间信息</h3>
+          </header>
+          <dl class="room-stats">
+            <div>
+              <dt>最新进展</dt>
+              <dd data-role="latest-message">-</dd>
+            </div>
+            <div>
+              <dt>当前状态</dt>
+              <dd data-role="room-status">等待更新</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="sidebar__card sidebar__card--judge" data-role="judge-controls" hidden>
+          <header class="sidebar__card-header">
+            <h3>裁判控制台</h3>
+          </header>
+          <label class="judge-field">
+            <span class="judge-field__label">下一回合提示</span>
+            <textarea data-role="judge-message" rows="4" placeholder="可选：简述局势或抛出新的问题"></textarea>
+          </label>
+          <div class="judge-actions">
+            <button type="button" class="btn-accent" data-role="trigger-round">触发下一回合</button>
+            <button type="button" class="btn-danger" data-role="close-room">结束房间</button>
+          </div>
+          <p class="form-error" data-role="round-error" hidden></p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="js/ai-battle-room.js"></script>
+</body>
+</html>
