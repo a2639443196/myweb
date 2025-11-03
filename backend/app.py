@@ -12,6 +12,14 @@ from typing import Any, Callable, Dict, Optional
 from flask import Flask, abort, jsonify, make_response, request, send_from_directory
 from flask_sock import Sock
 
+from backend.ai_registry import AgentRegistry
+from backend.battle_room import (
+    BattleRoomManager,
+    RoomAlreadyExistsError,
+    RoomNotFoundError,
+    RoomPermissionError,
+)
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR
 DATABASE_PATH = Path(__file__).resolve().parent / "wellness.db"
@@ -19,6 +27,7 @@ SESSION_COOKIE_NAME = "session_token"
 SESSION_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
 ONLINE_THRESHOLD_SECONDS = 60
 ONLINE_BROADCAST_INTERVAL = 10
+AI_CONFIG_PATH = Path(__file__).resolve().parent / "config" / "ai_agents.yaml"
 
 
 class OnlineUserNotifier:
@@ -93,6 +102,8 @@ class OnlineUserNotifier:
 
 
 online_user_notifier: Optional[OnlineUserNotifier] = None
+agent_registry = AgentRegistry(AI_CONFIG_PATH)
+battle_room_manager = BattleRoomManager(agent_registry)
 
 
 def notify_online_users_change() -> None:
@@ -244,6 +255,84 @@ def create_app() -> Flask:
 
         return response
 
+    @app.get("/api/battle/agents")
+    def battle_agents() -> Any:
+        snapshot = agent_registry.snapshot()
+        return jsonify(snapshot)
+
+    @app.get("/api/battle/room")
+    def battle_room_state() -> Any:
+        state = battle_room_manager.get_state()
+        if not state:
+            return jsonify({"error": "房间未创建"}), 404
+        return jsonify(state)
+
+    @app.post("/api/battle/room")
+    def battle_room_create() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        payload = request.get_json(silent=True) or {}
+        game_name = str(payload.get("gameName", "")).strip()
+        game_rules = str(payload.get("gameRules", "")).strip()
+        agent_ids = payload.get("agentIds")
+
+        if not isinstance(agent_ids, list):
+            return jsonify({"error": "agentIds 必须是数组"}), 400
+
+        try:
+            room = battle_room_manager.create_room(
+                judge_account=account,
+                game_name=game_name,
+                game_rules=game_rules,
+                agent_ids=[str(item) for item in agent_ids],
+            )
+        except RoomAlreadyExistsError:
+            return jsonify({"error": "房间已存在，无法重复创建"}), 409
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        except KeyError as error:
+            missing = error.args[0] if error.args else "未知"
+            return jsonify({"error": f"未找到指定的 AI：{missing}"}), 400
+
+        return jsonify(room.to_payload())
+
+    @app.post("/api/battle/round")
+    def battle_room_advance() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        payload = request.get_json(silent=True) or {}
+        judge_message = str(payload.get("judgeMessage", ""))
+
+        try:
+            room = battle_room_manager.advance_round(account=account, judge_message=judge_message)
+        except RoomNotFoundError:
+            return jsonify({"error": "房间未创建"}), 404
+        except RoomPermissionError as error:
+            return jsonify({"error": str(error)}), 403
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+
+        return jsonify(room.to_payload())
+
+    @app.delete("/api/battle/room")
+    def battle_room_close() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        try:
+            battle_room_manager.close_room(account=account)
+        except RoomNotFoundError:
+            return jsonify({"error": "房间未创建"}), 404
+        except RoomPermissionError as error:
+            return jsonify({"error": str(error)}), 403
+
+        return jsonify({"status": "closed"})
+
     @app.get("/api/online-users")
     def online_users() -> Any:
         users = list_online_users()
@@ -302,6 +391,22 @@ def create_app() -> Flask:
             return jsonify({"error": "获取活动失败", "details": str(error)}), 500
 
         return jsonify({"activities": [serialize_activity(item) for item in activities]})
+
+    @sock.route("/ws/battle")
+    def battle_socket(ws: Any) -> None:
+        battle_room_manager.register_socket(ws)
+        try:
+            while True:
+                try:
+                    message = ws.receive()
+                except Exception:
+                    break
+                if message is None:
+                    break
+                if isinstance(message, str) and message.strip().lower() == "ping":
+                    ws.send(json.dumps({"type": "pong"}, ensure_ascii=False))
+        finally:
+            battle_room_manager.unregister_socket(ws)
 
     @sock.route("/ws/online")
     def online_users_socket(ws: Any) -> None:

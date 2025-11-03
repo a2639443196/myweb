@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 博弈控制台</title>
+  <link rel="stylesheet" href="css/ai-battle.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="page__header">
+      <div>
+        <h1>AI 博弈控制台</h1>
+        <p>创建 4-5 AI 的单房间博弈，驱动长连接实时观战。</p>
+      </div>
+      <a class="page__home" href="index.html" aria-label="返回首页">🏠 返回首页</a>
+    </header>
+
+    <section class="notice" data-role="auth-warning" hidden>
+      <p>请先登录账号后再创建或观战房间。</p>
+    </section>
+
+    <main class="grid">
+      <section class="card" data-role="creation-section">
+        <h2>创建新房间</h2>
+        <p class="card__hint">选择 4-5 个 AI，并填写游戏名称与规则。房间存在时仅裁判可操作。</p>
+        <form data-role="create-form" autocomplete="off">
+          <label class="field">
+            <span class="field__label">游戏名称</span>
+            <input name="gameName" required maxlength="60" placeholder="例如：银河策略会议" />
+          </label>
+          <label class="field">
+            <span class="field__label">游戏规则</span>
+            <textarea name="gameRules" rows="6" required placeholder="请描述清晰的胜负判断、回合流程等规则"></textarea>
+            <button type="button" class="field__template" data-role="fill-template">使用示例模版</button>
+          </label>
+          <fieldset class="field">
+            <legend class="field__label">选择 AI（4-5 个）</legend>
+            <div class="field__options" data-role="agent-list"></div>
+          </fieldset>
+          <div class="actions">
+            <button type="submit" class="btn-primary">创建房间并开始</button>
+          </div>
+          <p class="form-error" data-role="create-error" hidden></p>
+        </form>
+      </section>
+
+      <section class="card card--stretch" data-role="battle-section" hidden>
+        <header class="battle__header">
+          <div>
+            <h2 data-role="room-title"></h2>
+            <p data-role="room-rules"></p>
+          </div>
+          <div class="battle__meta">
+            <span>裁判：<strong data-role="judge-name"></strong></span>
+            <span>回合：<strong data-role="round"></strong></span>
+          </div>
+        </header>
+
+        <div class="battle__body">
+          <aside class="battle__participants">
+            <h3>参与 AI</h3>
+            <ul data-role="participant-list"></ul>
+            <div class="battle__controls" data-role="judge-controls" hidden>
+              <textarea data-role="judge-message" rows="3" placeholder="裁判提示（可选）"></textarea>
+              <div class="battle__buttons">
+                <button type="button" class="btn-primary" data-role="trigger-round">触发下一回合</button>
+                <button type="button" class="btn-danger" data-role="close-room">结束房间</button>
+              </div>
+              <p class="form-error" data-role="round-error" hidden></p>
+            </div>
+          </aside>
+
+          <section class="battle__chat" aria-live="polite">
+            <ul class="chat-log" data-role="chat-log"></ul>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="js/ai-battle.js"></script>
+</body>
+</html>

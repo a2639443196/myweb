@@ -1,0 +1,62 @@
+agents:
+  - id: openai_gpt4
+    display_name: "OpenAI GPT-4 Turbo"
+    provider: openai
+    model: gpt-4-turbo
+    description: "OpenAI 通用推理模型，适合综合策略博弈。"
+    api_key_env: OPENAI_API_KEY
+    default_params:
+      temperature: 0.7
+      max_tokens: 512
+    sample_dialogue: |
+      作为 {agent_name}，在第 {round} 回合，我会综合已有动作给出策略建议：{game_rules_preview}。
+      当前最新局势：{last_message or '暂无最新动作'}。
+      我的行动是：保持团队协作，针对 {game_name} 的目标推进。
+  - id: azure_openai_gpt35
+    display_name: "Azure OpenAI GPT-35"
+    provider: azure_openai
+    deployment: gpt-35-turbo
+    description: "Azure 平台部署的 GPT-3.5，用于快速响应。"
+    api_key_env: AZURE_OPENAI_KEY
+    endpoint_env: AZURE_OPENAI_ENDPOINT
+    default_params:
+      temperature: 0.6
+      max_tokens: 400
+    sample_dialogue: |
+      {agent_name}（Azure）在第 {round} 回合根据裁判指令行事。
+      最新裁判提示：{judge_message or '无'}。
+      我决定尝试不同策略，确保 {game_name} 的博弈多样性。
+  - id: anthropic_claude
+    display_name: "Anthropic Claude 3"
+    provider: anthropic
+    model: claude-3-opus-20240229
+    description: "Claude 3 Opus，擅长长文本与规则推理。"
+    api_key_env: ANTHROPIC_API_KEY
+    default_params:
+      temperature: 0.5
+      max_tokens: 600
+    sample_dialogue: |
+      {agent_name} 在规则 "{game_rules}" 下评估第 {round} 回合。
+      结合上一条消息：{last_message or '目前暂无历史'}。
+      我将给出稳健回应，确保玩法公平。
+  - id: internal_minimax
+    display_name: "内部 MiniMax Bot"
+    provider: internal
+    module: ai_bots.minimax
+    class: MiniMaxBot
+    description: "公司自研的 MiniMax 决策机器人，支持棋类对战。"
+    config:
+      depth: 3
+      heuristic: balanced
+    sample_dialogue: |
+      {agent_name} 运行内部策略模块。第 {round} 回合评估完成。
+      历史动作提示：{last_message or '暂无历史动作'}。
+      选择动作：执行平衡策略推进博弈。
+  - id: story_weaver
+    display_name: "故事编织者"
+    provider: template
+    description: "示例模版型 Bot，用于演示无需真实 API 时的输出。"
+    sample_dialogue: |
+      我是 {agent_name}，主要负责丰富剧情。
+      第 {round} 回合我会根据 {game_rules} 创造新的故事线索。
+      最新局势：{last_message or '目前平静无事'}。接下来我将推动角色互动。
