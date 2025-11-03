@@ -2,10 +2,10 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PYTHON_BIN=$(command -v python3.8 || true)
+PYTHON_BIN=$(command -v python3.10 || true)
 
 if [[ -z "${PYTHON_BIN}" ]]; then
-    echo "未找到 python3.8，请先安装后再运行此脚本。" >&2
+    echo "未找到 python3.10，请先安装后再运行此脚本。" >&2
     exit 1
 fi
 
