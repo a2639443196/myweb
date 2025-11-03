@@ -89,6 +89,8 @@ const renderAgentOptions = () => {
   state.agents.forEach((agent) => {
     const card = document.createElement('label');
     card.className = 'agent-card';
+    const providerKey = (agent.provider || 'ai').toString().toLowerCase();
+    card.dataset.provider = providerKey;
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -100,9 +102,16 @@ const renderAgentOptions = () => {
       card.classList.toggle('agent-card--checked', checkbox.checked);
     });
 
+    const defaultSelected = agent.default_selected ?? agent.defaultSelected ?? false;
+    if (defaultSelected) {
+      checkbox.checked = true;
+      card.classList.add('agent-card--checked');
+    }
+
     const badge = document.createElement('span');
     badge.className = 'agent-card__badge';
-    badge.textContent = agent.provider ?? 'AI';
+    const badgeLabel = agent.badge_label || agent.badgeLabel || agent.provider || 'AI';
+    badge.textContent = badgeLabel;
 
     const title = document.createElement('div');
     title.className = 'agent-card__title';
@@ -111,13 +120,30 @@ const renderAgentOptions = () => {
     const meta = document.createElement('p');
     meta.className = 'agent-card__meta';
     const provider = agent.provider ?? '未注明提供方';
-    meta.textContent = `${provider} · ${agent.id}`;
+    const providerLabel = badgeLabel || provider;
+    meta.textContent = `${providerLabel} · ${agent.id}`;
 
     const description = document.createElement('p');
     description.className = 'agent-card__description';
     description.textContent = agent.description || '暂无简介';
 
     card.append(checkbox, badge, title, meta, description);
+
+    if (Array.isArray(agent.strengths) && agent.strengths.length) {
+      const list = document.createElement('ul');
+      list.className = 'agent-card__strengths';
+      agent.strengths.forEach((text) => {
+        const label = text?.toString().trim();
+        if (!label) return;
+        const item = document.createElement('li');
+        item.textContent = label;
+        list.append(item);
+      });
+      if (list.childElementCount > 0) {
+        card.append(list);
+      }
+    }
+
     elements.agentList.append(card);
   });
 };
