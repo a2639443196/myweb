@@ -1,12 +1,20 @@
 from __future__ import annotations
 
 import json
+import logging
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional
 
 from backend.ai_registry import AgentDefinition, AgentRegistry, build_dialogue_context
+from backend.llm_gateway import LLMGateway, LLMGenerationError
+
+
+logger = logging.getLogger(__name__)
+
+
+llm_gateway = LLMGateway()
 
 
 class RoomAlreadyExistsError(RuntimeError):
@@ -84,7 +92,20 @@ class BattleRoom:
             judge_message=judge_message,
             last_message=last_message,
         )
-        response = agent.render_dialogue(context)
+        response = ""
+        try:
+            response = llm_gateway.generate_response(agent, context)
+        except LLMGenerationError as error:
+            logger.warning(
+                "使用外部模型为 %s 生成回复失败：%s，改用示例模版。",
+                agent.agent_id,
+                error,
+            )
+        except Exception as error:  # pragma: no cover - defensive fallback
+            logger.exception("生成 %s 回复时出现未处理异常", agent.agent_id)
+
+        if not response.strip():
+            response = agent.render_dialogue(context)
         with self._lock:
             self._append_message(
                 message_type="ai",

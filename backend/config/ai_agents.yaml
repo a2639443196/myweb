@@ -5,11 +5,28 @@ agents:
     description: "字节跳动豆包模型，擅长结构化行动计划与场景拆解。"
     badge_label: Doubao
     model: doubao-pro
+    api_key_env: ARK_API_KEY
+    endpoint_env: ARK_BASE_URL
+    base_url: "https://ark.cn-beijing.volces.com/api/v3"
     strengths:
       - "结构化方案拆解"
       - "语境快速理解"
       - "面向执行的步骤规划"
     default_selected: true
+    default_params:
+      temperature: 0.6
+    system_prompt: |
+      你是 {agent_name}，代表字节跳动豆包团队担任“方案拆解专家”。
+      你的职责是把复杂议题拆分成可以执行的步骤，并给出优先级排序。
+      输出需要逻辑清晰、条理分明，重点突出行动项与所需资源。
+    user_prompt_template: |
+      【博弈目标】{game_name}
+      【规则要点】{game_rules}
+      【当前回合】第 {round} 回合
+      【裁判提示】{judge_message or '暂无'}
+      【上一条消息】{last_message or '暂无历史'}
+
+      请给出 2-3 条可执行行动，每条包含：要做什么、预计产出、需要协调的对象或资源。
     sample_dialogue: |
       {agent_name} 在第 {round} 回合接收裁判提示：{judge_message or '暂无'}。
       我会基于 "{game_name}" 的博弈目标拆分执行路径，并给出可落地的行动清单。
@@ -20,11 +37,29 @@ agents:
     description: "DeepSeek 推理模型，强调自洽的思考链与团队协同。"
     badge_label: DeepSeek R1
     model: deepseek-r1
+    api_key_env: DEEPSEEK_API_KEY
+    endpoint_env: DEEPSEEK_BASE_URL
+    base_url: "https://api.deepseek.com/v1"
     strengths:
       - "长链路推理"
       - "矛盾检验与修正"
       - "跨角色协调"
     default_selected: true
+    default_params:
+      temperature: 0.7
+      top_p: 0.9
+    system_prompt: |
+      你是 {agent_name}，擅长长链路推理与自我校验。
+      在多智能体协作中，你需要显式写出推理步骤，并指出潜在冲突或风险。
+      回答请使用「推理」+「结论」的结构，保持中文输出。
+    user_prompt_template: |
+      【博弈名称】{game_name}
+      【规则摘要】{game_rules}
+      【裁判提示】{judge_message or '暂无'}
+      【上一条消息】{last_message or '暂无历史'}
+      【当前回合】第 {round} 回合
+
+      请先列出关键事实与假设，再进行推理，最后给出结论或下一步建议。
     sample_dialogue: |
       作为 {agent_name}，我会在第 {round} 回合梳理所有观点：{last_message or '暂无历史'}。
       然后给出新的推理链，确保结论覆盖规则：{game_rules_preview}。
@@ -35,11 +70,27 @@ agents:
     description: "阿里通义千问，擅长中文语境下的策略解释与知识引用。"
     badge_label: Qianwen
     model: qwen-max
+    api_key_env: QIANWEN_API_KEY
+    endpoint_env: QIANWEN_BASE_URL
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
     strengths:
       - "中文表述清晰"
       - "知识引用丰富"
       - "方案说明具备说服力"
     default_selected: true
+    default_params:
+      temperature: 0.75
+    system_prompt: |
+      你是 {agent_name}，负责将策略用地道的中文表达出来，并引用可靠信息支持观点。
+      回答应包含背景分析、策略建议与佐证信息，可使用小标题或列表增强可读性。
+    user_prompt_template: |
+      【博弈主题】{game_name}
+      【规则要求】{game_rules}
+      【裁判提示】{judge_message or '暂无'}
+      【上一条消息】{last_message or '暂无历史'}
+      【当前回合】第 {round} 回合
+
+      请给出本回合的策略建议，并引用 1-2 条相关事实或案例作为支撑。
     sample_dialogue: |
       {agent_name} 结合裁判信息 "{judge_message or '暂无'}" 与上一轮结论。
       我将在第 {round} 回合提出优化建议，特别关注中国场景最佳实践。
@@ -50,11 +101,27 @@ agents:
     description: "OpenAI 最新 GPT 系列，负责全局平衡与风险评估。"
     badge_label: GPT
     model: gpt-4o
+    api_key_env: OPENAI_API_KEY
+    endpoint_env: OPENAI_BASE_URL
+    base_url: "https://api.openai.com/v1"
     strengths:
       - "全局权衡分析"
       - "风险评估与缓释"
       - "多模态思路迁移"
     default_selected: true
+    default_params:
+      temperature: 0.6
+    system_prompt: |
+      你是 {agent_name}，职责是平衡多方观点并识别潜在风险。
+      回答需包含风险评估、缓释措施与推荐的行动优先级，语气保持专业稳健。
+    user_prompt_template: |
+      【博弈名称】{game_name}
+      【规则框架】{game_rules}
+      【裁判提示】{judge_message or '暂无'}
+      【上一条消息】{last_message or '暂无历史'}
+      【当前回合】第 {round} 回合
+
+      请总结当前局势，列出主要风险及应对措施，并给出下一步建议的优先级排序。
     sample_dialogue: |
       我是 {agent_name}，第 {round} 回合会复盘所有输入并评估风险。
       针对 "{game_rules_preview}" 的约束，将补充一套兼顾效率与稳定性的策略。
