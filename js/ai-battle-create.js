@@ -1,13 +1,11 @@
 const TEMPLATE = {
-  objective:
-    '人类殖民舰队抵达火星轨道，四支 AI 顾问团队需要在 12 小时内提交联合行动方案，以确保首次登陆成功并维持殖民地的长期可持续性。',
-  rules: `回合流程：\n1. 裁判发布局势更新或新的约束条件。\n2. AI 按照编号顺序依次发言，需在上一位发言基础上推进策略。\n3. 每回合至少给出一个可执行的决策或评估指标。\n限制：\n- 禁止出现不切实际的超光速、瞬移等设定。\n- 回应需包含推理链或资源评估。`,
-  winCondition:
-    '当团队提交的联合方案满足能源自足、资源补给、安全登陆、生态循环四项指标且经过至少两轮交叉验证时结束博弈，由裁判宣布达成目标。',
-  specialNotes:
-    '初始资源：三艘登陆舱、两套核能模块、可部署温室系统一套。环境风暴将在 18 小时后抵达。',
+  villageName: '银月镇',
+  background:
+    '银月镇被接连不断的银色雾霭笼罩，族长在昨夜的祭坛旁离奇失踪。村民怀疑狼人潜伏，唯一的线索是一枚染血的银质徽章。',
+  specialRules:
+    '村庄钟楼会在白天公布上一夜的异常：若无人死亡则代表女巫可能救人或狼人未出手；若出现双亡则暗示女巫使用毒药。',
   openingBrief:
-    '当前时间为火星日出前 4 小时，轨道监测到南半球即将形成的沙尘暴。请各团队就登陆地点选择与能源部署给出首轮建议。',
+    '主持人公告：银色雾霭再次降临，守夜人听到铁匠铺方向传来低吼。所有人请密切关注与铁器相关的发言。',
 };
 
 class HttpError extends Error {
@@ -75,7 +73,7 @@ const toggleAuthWarning = (visible) => {
 
 const loadAgents = async () => {
   try {
-    const snapshot = await requestJSON('/api/battle/agents');
+    const snapshot = await requestJSON('/api/werewolf/agents');
     state.agents = snapshot?.agents ?? [];
     renderAgentOptions();
   } catch (error) {
@@ -160,40 +158,37 @@ const handleCreate = async (event) => {
   if (!elements.form || state.submitting) return;
 
   const formData = new FormData(elements.form);
-  const gameName = formData.get('gameName')?.toString().trim() ?? '';
-  const objective = formData.get('gameObjective')?.toString().trim() ?? '';
-  const rules = formData.get('gameRules')?.toString().trim() ?? '';
-  const winCondition = formData.get('winCondition')?.toString().trim() ?? '';
-  const notes = formData.get('specialNotes')?.toString().trim() ?? '';
+  const villageName = formData.get('villageName')?.toString().trim() ?? '';
+  const background = formData.get('background')?.toString().trim() ?? '';
+  const specialRules = formData.get('specialRules')?.toString().trim() ?? '';
   const openingBrief = formData.get('openingBrief')?.toString().trim() ?? '';
   const agentIds = collectSelectedAgents();
 
-  if (!gameName) {
-    showCreateError('请输入博弈名称。');
+  if (!villageName) {
+    showCreateError('请输入村庄名称。');
     return;
   }
-  if (!objective || !rules || !winCondition) {
-    showCreateError('请完整填写目标、规则与胜利条件。');
+  if (!background) {
+    showCreateError('请填写故事背景，为 AI 提供足够的剧情信息。');
     return;
   }
-  if (agentIds.length < 4 || agentIds.length > 5) {
-    showCreateError('请选择 4-5 名参赛 AI。');
+  if (agentIds.length < 5) {
+    showCreateError('请选择至少 5 名 AI。');
     return;
   }
 
-  const gameRules = composeRules({ objective, rules, winCondition, notes });
-  const payload = { gameName, gameRules, agentIds };
+  const payload = { villageName, background, specialRules, openingBrief, agentIds };
 
   try {
     setSubmitting(true);
-    const result = await requestJSON('/api/battle/room', {
+    const result = await requestJSON('/api/werewolf/room', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
     if (!result) {
       throw new Error('房间创建失败，请稍后再试。');
     }
-    await triggerFirstRound(openingBrief);
+    await triggerFirstPhase();
     showCreateError('');
     window.location.href = 'ai-battle-room.html';
   } catch (error) {
@@ -201,7 +196,7 @@ const handleCreate = async (event) => {
       if (error.status === 401) {
         showCreateError('未登录或会话已过期，请先登录后再操作。');
       } else if (error.status === 409) {
-        showCreateError('当前已存在运行中的房间，请先在聊天室结束后再尝试。');
+        showCreateError('当前已有狼人杀房间在运行，请先在聊天室结束后再尝试。');
       } else {
         showCreateError(error.message);
       }
@@ -213,27 +208,15 @@ const handleCreate = async (event) => {
   }
 };
 
-const composeRules = ({ objective, rules, winCondition, notes }) => {
-  const lines = [
-    `【博弈目标】\n${objective}`,
-    `\n【关键规则】\n${rules}`,
-    `\n【胜利条件】\n${winCondition}`,
-  ];
-  if (notes) {
-    lines.push(`\n【限制与资源】\n${notes}`);
-  }
-  return lines.join('\n');
-};
-
-const triggerFirstRound = async (openingBrief) => {
+const triggerFirstPhase = async () => {
   try {
-    await requestJSON('/api/battle/round', {
+    await requestJSON('/api/werewolf/advance', {
       method: 'POST',
-      body: JSON.stringify({ judgeMessage: openingBrief }),
+      body: JSON.stringify({ judgeMessage: '' }),
     });
   } catch (error) {
     if (error instanceof HttpError) {
-      throw new HttpError(`首回合触发失败：${error.message}`, error.status, error.payload);
+      throw new HttpError(`首轮推进失败：${error.message}`, error.status, error.payload);
     }
     throw error;
   }
@@ -272,19 +255,15 @@ const updateFormAvailability = (enabled) => {
 
 const fillTemplate = () => {
   if (!elements.form) return;
-  const name = elements.form.querySelector('input[name="gameName"]');
-  const objective = elements.form.querySelector('textarea[name="gameObjective"]');
-  const rules = elements.form.querySelector('textarea[name="gameRules"]');
-  const win = elements.form.querySelector('textarea[name="winCondition"]');
-  const notes = elements.form.querySelector('textarea[name="specialNotes"]');
-  const opening = elements.form.querySelector('textarea[name="openingBrief"]');
+  const villageName = elements.form.querySelector('input[name="villageName"]');
+  const background = elements.form.querySelector('textarea[name="background"]');
+  const specialRules = elements.form.querySelector('textarea[name="specialRules"]');
+  const openingBrief = elements.form.querySelector('textarea[name="openingBrief"]');
 
-  if (name) name.value = '火星殖民议事会';
-  if (objective) objective.value = TEMPLATE.objective;
-  if (rules) rules.value = TEMPLATE.rules;
-  if (win) win.value = TEMPLATE.winCondition;
-  if (notes) notes.value = TEMPLATE.specialNotes;
-  if (opening) opening.value = TEMPLATE.openingBrief;
+  if (villageName) villageName.value = TEMPLATE.villageName;
+  if (background) background.value = TEMPLATE.background;
+  if (specialRules) specialRules.value = TEMPLATE.specialRules;
+  if (openingBrief) openingBrief.value = TEMPLATE.openingBrief;
 };
 
 const initEvents = () => {
