@@ -3,131 +3,109 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI 狼人杀导演台</title>
+  <title>AI 骗子酒馆筹备台</title>
   <link rel="stylesheet" href="css/ai-battle.css" />
 </head>
 <body>
   <div class="create-page">
     <header class="create-header">
       <div>
-        <p class="create-breadcrumb">AI Werewolf Console</p>
-        <h1>编排一场 AI 狼人杀</h1>
+        <p class="create-breadcrumb">Liars Bar Arena</p>
+        <h1>编排一场 AI 骗子酒馆对决</h1>
         <p class="create-tagline">
-          自定义村庄背景、特殊规则与主持人开场提示，邀请至少 5 名 AI 扮演狼人、预言家、村民等角色，自动演绎夜晚与白天的推理攻防。
+          选择多位擅长推理、诈唬与心理博弈的大语言模型，设定对局情景，让它们在轮流装弹、互相质疑的回合中，争夺最终的生存者。
         </p>
       </div>
       <nav class="create-actions" aria-label="页面导航">
         <a class="create-actions__link" href="index.html">🏠 返回首页</a>
-        <a class="create-actions__link create-actions__link--primary" href="ai-battle-room.html">进入狼人村</a>
+        <a class="create-actions__link create-actions__link--primary" href="ai-battle-room.html">进入直播间</a>
       </nav>
     </header>
 
-    <section class="lineup-panel" aria-label="推荐 AI 阵容">
+    <section class="lineup-panel" aria-label="搭档建议">
       <div class="lineup-panel__header">
-        <h2>推荐角色分配思路</h2>
+        <h2>阵容建议</h2>
         <p>
-          选择至少两名善于隐蔽的 AI 扮演狼人，并搭配逻辑缜密的预言家、反应敏捷的女巫与稳健的村民角色。以下阵容可作为起点，创建时仍可自由增删。
+          骗子酒馆适合 4-6 名玩家。可混合配置善于稳健布局的模型与擅长创造戏剧冲突的模型，让局面既有逻辑推理也有情绪博弈。
         </p>
       </div>
       <div class="lineup-panel__grid">
-        <article class="lineup-card" data-provider="wolf">
-          <h3>暗夜同盟</h3>
-          <p>擅长操控话题、善于潜伏，负责夜间猎杀并混淆视听。</p>
+        <article class="lineup-card" data-provider="strategist">
+          <h3>策略家</h3>
+          <p>擅长长线规划，适合主导场面与维持可信叙事。</p>
         </article>
-        <article class="lineup-card" data-provider="seer">
-          <h3>预言之眼</h3>
-          <p>洞察身份、整理情报，白天引导村民形成共识。</p>
+        <article class="lineup-card" data-provider="trickster">
+          <h3>诈唬手</h3>
+          <p>敢于豪赌和编织谎言，为战局带来高风险高收益的剧情。</p>
         </article>
-        <article class="lineup-card" data-provider="witch">
-          <h3>药剂双刃</h3>
-          <p>掌握解药与毒药的关键角色，决定关键夜晚的命运。</p>
+        <article class="lineup-card" data-provider="analyst">
+          <h3>洞察者</h3>
+          <p>细致追踪每轮信息，负责拆穿谎言与锁定目标牌。</p>
         </article>
-        <article class="lineup-card" data-provider="villager">
-          <h3>坚定村民</h3>
-          <p>凭借逻辑推理与直觉判断阵营，维系村庄士气。</p>
-        </article>
-        <article class="lineup-card" data-provider="hunter">
-          <h3>猎人守护</h3>
-          <p>关键时刻反击狼人，牵制夜间袭击的节奏。</p>
+        <article class="lineup-card" data-provider="performer">
+          <h3>气氛担当</h3>
+          <p>擅长塑造故事张力，为观众呈现精彩对话。</p>
         </article>
       </div>
     </section>
 
     <section class="auth-warning" data-role="auth-warning" hidden>
-      <p>请先登录账号后再创建狼人杀房间。</p>
+      <p>请先登录账号后再创建骗子酒馆对决。</p>
     </section>
 
     <main class="create-layout">
       <aside class="create-sidebar" aria-label="创建步骤">
         <div class="step-card">
           <span class="step-card__index">01</span>
-          <h2>设定村庄背景</h2>
-          <p>描述故事发生的时间地点、村民遭遇的危机，以及你想让 AI 执行的特殊规则。</p>
+          <h2>设定对局标题</h2>
+          <p>一句话点题即可，例如“午夜密谋”或“黑桃之局”。</p>
         </div>
         <div class="step-card">
           <span class="step-card__index">02</span>
-          <h2>挑选参演 AI</h2>
-          <p>至少 5 名 AI 即可开局，系统会自动分配狼人、预言家、女巫、猎人等身份。</p>
+          <h2>描述场景</h2>
+          <p>为 AI 提供背景、玩家心态或额外暗线，引导它们的出牌逻辑。</p>
         </div>
         <div class="step-card">
           <span class="step-card__index">03</span>
-          <h2>发布主持人提示</h2>
-          <p>开场白会作为夜晚行动的指令，影响第一天的剧情走向。</p>
+          <h2>挑选参战 AI</h2>
+          <p>至少 4 名 AI 即可开局，系统会自动发牌并推进全部回合。</p>
         </div>
       </aside>
 
       <section class="create-form-card">
         <header class="create-form-card__header">
-          <h2>村庄配置</h2>
-          <button type="button" class="template-button" data-role="fill-template">填充示例剧本</button>
+          <h2>对局配置</h2>
+          <button type="button" class="template-button" data-role="fill-template">填充示例设定</button>
         </header>
 
         <form class="create-form" data-role="create-form" autocomplete="off">
           <div class="field-group">
             <label class="field">
-              <span class="field__label">村庄名称</span>
-              <input name="villageName" required maxlength="60" placeholder="例如：银月镇" />
+              <span class="field__label">对局标题（可选）</span>
+              <input name="title" maxlength="60" placeholder="例如：午夜的空弹轮盘" />
             </label>
           </div>
 
           <label class="field">
-            <span class="field__label">故事背景</span>
+            <span class="field__label">场景设定</span>
             <textarea
-              name="background"
-              rows="5"
+              name="scenario"
+              rows="6"
               required
-              placeholder="交代夜晚前后的大事件、村民的恐慌或悬念，为 AI 提供推理线索。"
-            ></textarea>
-          </label>
-
-          <label class="field">
-            <span class="field__label">特殊规则（可选）</span>
-            <textarea
-              name="specialRules"
-              rows="4"
-              placeholder="例如自定义的胜利条件、额外职业、时间限制或投票机制。"
-            ></textarea>
-          </label>
-
-          <label class="field">
-            <span class="field__label">主持人开场提示（可选）</span>
-            <textarea
-              name="openingBrief"
-              rows="3"
-              placeholder="向所有 AI 发布的开场公告，夜晚行动和首日讨论会参考此提示。"
+              placeholder="描述枪支、赌注、玩家关系或任何线索，帮助 AI 理解当前对局氛围。"
             ></textarea>
           </label>
 
           <fieldset class="field field--agents">
-            <legend class="field__label">选择参演 AI（≥5 名）</legend>
-            <p class="field__hint">点击卡片勾选。身份由系统自动分配，部分 AI 默认勾选以快速开局。</p>
+            <legend class="field__label">选择参战 AI（≥4 名更佳）</legend>
+            <p class="field__hint">点击卡片勾选。系统将使用对应模型来调用骗子酒馆提示词。</p>
             <div class="agent-grid" data-role="agent-list"></div>
           </fieldset>
 
           <p class="form-error" data-role="create-error" hidden></p>
 
           <div class="create-form__actions">
-            <button type="submit" class="btn-primary">创建并进入狼人村</button>
+            <button type="submit" class="btn-primary">创建并进入直播间</button>
           </div>
         </form>
       </section>

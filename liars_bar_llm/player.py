@@ -1,17 +1,22 @@
-import random
-import json
-import re
-from typing import List, Dict
-from llm_client import LLMClient
+from __future__ import annotations
 
-RULE_BASE_PATH = "prompt/rule_base.txt"
-PLAY_CARD_PROMPT_TEMPLATE_PATH = "prompt/play_card_prompt_template.txt"
-CHALLENGE_PROMPT_TEMPLATE_PATH = "prompt/challenge_prompt_template.txt"
-REFLECT_PROMPT_TEMPLATE_PATH = "prompt/reflect_prompt_template.txt"
+import json
+import random
+import re
+from pathlib import Path
+from typing import Dict, List, Optional
+
+from .llm_client import LLMClient
+
+BASE_DIR = Path(__file__).resolve().parent
+RULE_BASE_PATH = BASE_DIR / "prompt" / "rule_base.txt"
+PLAY_CARD_PROMPT_TEMPLATE_PATH = BASE_DIR / "prompt" / "play_card_prompt_template.txt"
+CHALLENGE_PROMPT_TEMPLATE_PATH = BASE_DIR / "prompt" / "challenge_prompt_template.txt"
+REFLECT_PROMPT_TEMPLATE_PATH = BASE_DIR / "prompt" / "reflect_prompt_template.txt"
 
 
 class Player:
-    def __init__(self, name: str, model_name: str):
+    def __init__(self, name: str, model_name: str, llm_client: Optional[LLMClient] = None):
         """初始化玩家
 
         Args:
@@ -26,16 +31,16 @@ class Player:
         self.opinions = {}
 
         # LLM相关初始化
-        self.llm_client = LLMClient()
+        self.llm_client = llm_client or LLMClient()
         self.model_name = model_name
 
-    def _read_file(self, filepath: str) -> str:
+    def _read_file(self, filepath: Path) -> str:
         """读取文件内容"""
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                return f.read().strip()
-        except Exception as e:
-            print(f"读取文件 {filepath} 失败: {str(e)}")
+            with open(filepath, "r", encoding="utf-8") as file:
+                return file.read().strip()
+        except Exception as error:
+            print(f"读取文件 {filepath} 失败: {error}")
             return ""
 
     def print_status(self) -> None:
@@ -55,10 +60,12 @@ class Player:
             if player.name != self.name
         }
 
-    def choose_cards_to_play(self,
-                             round_base_info: str,
-                             round_action_info: str,
-                             play_decision_info: str) -> Dict:
+    def choose_cards_to_play(
+        self,
+        round_base_info: str,
+        round_action_info: str,
+        play_decision_info: str,
+    ) -> tuple[Dict, Optional[str]]:
         """
         玩家选择出牌
 
@@ -126,12 +133,14 @@ class Player:
                 print(f"尝试 {attempt + 1} 解析失败: {str(e)}")
         raise RuntimeError(f"玩家 {self.name} 的choose_cards_to_play方法在多次尝试后失败")
 
-    def decide_challenge(self,
-                         round_base_info: str,
-                         round_action_info: str,
-                         challenge_decision_info: str,
-                         challenging_player_performance: str,
-                         extra_hint: str) -> bool:
+    def decide_challenge(
+        self,
+        round_base_info: str,
+        round_action_info: str,
+        challenge_decision_info: str,
+        challenging_player_performance: str,
+        extra_hint: str,
+    ) -> tuple[Dict, Optional[str]]:
         """
         玩家决定是否对上一位玩家的出牌进行质疑
 
@@ -192,8 +201,13 @@ class Player:
                 print(f"尝试 {attempt + 1} 解析失败: {str(e)}")
         raise RuntimeError(f"玩家 {self.name} 的decide_challenge方法在多次尝试后失败")
 
-    def reflect(self, alive_players: List[str], round_base_info: str, round_action_info: str,
-                round_result: str) -> None:
+    def reflect(
+        self,
+        alive_players: List[str],
+        round_base_info: str,
+        round_action_info: str,
+        round_result: str,
+    ) -> Dict[str, str]:
         """
         玩家在轮次结束后对其他存活玩家进行反思，更新对他们的印象
 
@@ -210,6 +224,7 @@ class Player:
         rules = self._read_file(RULE_BASE_PATH)
 
         # 对每个存活的玩家进行反思和印象更新（排除自己）
+        reflections: Dict[str, str] = {}
         for player_name in alive_players:
             # 跳过对自己的反思
             if player_name == self.name:
@@ -236,13 +251,14 @@ class Player:
 
             try:
                 content, _ = self.llm_client.chat(messages, model=self.model_name)
-
-                # 更新对该玩家的印象
-                self.opinions[player_name] = content.strip()
+                insight = content.strip()
+                self.opinions[player_name] = insight
+                reflections[player_name] = insight
                 print(f"{self.name} 更新了对 {player_name} 的印象")
+            except Exception as error:
+                print(f"反思玩家 {player_name} 时出错: {error}")
 
-            except Exception as e:
-                print(f"反思玩家 {player_name} 时出错: {str(e)}")
+        return reflections
 
     def process_penalty(self) -> bool:
         """处理惩罚"""

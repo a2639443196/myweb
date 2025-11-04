@@ -139,7 +139,8 @@ body {
 }
 
 .channel__phase,
-.channel__round {
+.channel__round,
+.channel__target {
   padding: 4px 10px;
   border-radius: 8px;
   background: rgba(88, 101, 242, 0.16);
@@ -232,6 +233,10 @@ body {
   background: linear-gradient(135deg, rgba(156, 163, 175, 0.6), rgba(75, 85, 99, 0.55));
 }
 
+.message__avatar--ai {
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.65), rgba(79, 70, 229, 0.6));
+}
+
 .message__body {
   display: flex;
   flex-direction: column;
@@ -266,6 +271,29 @@ body {
   white-space: pre-wrap;
   line-height: 1.7;
   color: rgba(226, 232, 240, 0.88);
+}
+
+.message__thinking {
+  margin-top: 8px;
+  background: rgba(30, 31, 36, 0.6);
+  border-radius: 10px;
+  border: 1px solid rgba(88, 101, 242, 0.2);
+  padding: 10px 14px;
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.message__thinking summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: rgba(165, 180, 252, 0.9);
+}
+
+.message__thinking pre {
+  margin: 8px 0 0;
+  font-family: 'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace;
+  white-space: pre-wrap;
+  line-height: 1.55;
+  color: rgba(226, 232, 240, 0.85);
 }
 
 .message--judge .message__tag {

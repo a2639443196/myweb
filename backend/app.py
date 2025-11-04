@@ -13,11 +13,10 @@ from flask import Flask, abort, jsonify, make_response, request, send_from_direc
 from flask_sock import Sock
 
 from backend.ai_registry import AgentRegistry
-from backend.werewolf_room import (
-    WerewolfRoomManager,
-    RoomAlreadyExistsError,
-    RoomNotFoundError,
-    RoomPermissionError,
+from backend.liars_bar_manager import (
+    LiarsBarGameManager,
+    GameAlreadyRunningError,
+    GameNotFoundError,
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -103,7 +102,7 @@ class OnlineUserNotifier:
 
 online_user_notifier: Optional[OnlineUserNotifier] = None
 agent_registry = AgentRegistry(AI_CONFIG_PATH)
-werewolf_room_manager = WerewolfRoomManager(agent_registry)
+liars_bar_manager = LiarsBarGameManager(agent_registry)
 
 
 def notify_online_users_change() -> None:
@@ -255,87 +254,64 @@ def create_app() -> Flask:
 
         return response
 
-    @app.get("/api/werewolf/agents")
-    def werewolf_agents() -> Any:
+    @app.get("/api/liars-bar/agents")
+    def liars_bar_agents() -> Any:
         snapshot = agent_registry.snapshot()
         return jsonify(snapshot)
 
-    @app.get("/api/werewolf/room")
-    def werewolf_room_state() -> Any:
-        state = werewolf_room_manager.get_state()
-        if not state:
-            return jsonify({"error": "房间未创建"}), 404
-        return jsonify(state)
+    @app.get("/api/liars-bar/game")
+    def liars_bar_game_state() -> Any:
+        snapshot = liars_bar_manager.get_state()
+        if not snapshot.get("game"):
+            return jsonify({"error": "游戏未创建"}), 404
+        return jsonify(snapshot)
 
-    @app.post("/api/werewolf/room")
-    def werewolf_room_create() -> Any:
+    @app.post("/api/liars-bar/game")
+    def liars_bar_game_create() -> Any:
         account = get_current_account()
         if not account:
             return jsonify({"error": "未登录"}), 401
 
         payload = request.get_json(silent=True) or {}
-        village_name = str(payload.get("villageName", "")).strip()
-        background = str(payload.get("background", "")).strip()
-        special_rules = str(payload.get("specialRules", "")).strip()
-        opening_brief = str(payload.get("openingBrief", "")).strip()
+        title = str(payload.get("title", "")).strip()
+        scenario = str(payload.get("scenario", "")).strip()
         agent_ids = payload.get("agentIds")
 
-        if not isinstance(agent_ids, list):
-            return jsonify({"error": "agentIds 必须是数组"}), 400
+        if not isinstance(agent_ids, list) or not agent_ids:
+            return jsonify({"error": "agentIds 必须是非空数组"}), 400
 
         try:
-            room = werewolf_room_manager.create_room(
-                judge_account=account,
-                village_name=village_name,
-                background=background,
-                special_rules=special_rules,
+            snapshot = liars_bar_manager.create_game(
+                creator=account,
+                title=title,
+                scenario=scenario,
                 agent_ids=[str(item) for item in agent_ids],
-                opening_brief=opening_brief,
             )
-        except RoomAlreadyExistsError:
-            return jsonify({"error": "房间已存在，无法重复创建"}), 409
-        except ValueError as error:
+        except GameAlreadyRunningError:
+            return jsonify({"error": "当前已有对局在进行，请稍后再试。"}), 409
+        except (ValueError, KeyError) as error:
             return jsonify({"error": str(error)}), 400
-        except KeyError as error:
-            missing = error.args[0] if error.args else "未知"
-            return jsonify({"error": f"未找到指定的 AI：{missing}"}), 400
 
-        return jsonify(room.to_payload())
+        return jsonify(snapshot)
 
-    @app.post("/api/werewolf/advance")
-    def werewolf_room_advance() -> Any:
+    @app.delete("/api/liars-bar/game")
+    def liars_bar_game_close() -> Any:
         account = get_current_account()
         if not account:
             return jsonify({"error": "未登录"}), 401
 
-        payload = request.get_json(silent=True) or {}
-        judge_message = str(payload.get("judgeMessage", ""))
+        snapshot = liars_bar_manager.get_state()
+        game = snapshot.get("game") or {}
+        creator = game.get("creator") or {}
+        if creator.get("id") and creator.get("id") != account.get("id"):
+            return jsonify({"error": "仅创建者可以结束对局。"}), 403
 
         try:
-            room = werewolf_room_manager.advance_phase(account=account, judge_message=judge_message)
-        except RoomNotFoundError:
-            return jsonify({"error": "房间未创建"}), 404
-        except RoomPermissionError as error:
-            return jsonify({"error": str(error)}), 403
-        except ValueError as error:
-            return jsonify({"error": str(error)}), 400
+            liars_bar_manager.close_game()
+        except GameNotFoundError:
+            return jsonify({"error": "游戏未创建"}), 404
 
-        return jsonify(room.to_payload())
-
-    @app.delete("/api/werewolf/room")
-    def werewolf_room_close() -> Any:
-        account = get_current_account()
-        if not account:
-            return jsonify({"error": "未登录"}), 401
-
-        try:
-            werewolf_room_manager.close_room(account=account)
-        except RoomNotFoundError:
-            return jsonify({"error": "房间未创建"}), 404
-        except RoomPermissionError as error:
-            return jsonify({"error": str(error)}), 403
-
-        return jsonify({"status": "closed"})
+        return jsonify({"status": "stopped"})
 
     @app.get("/api/online-users")
     def online_users() -> Any:
@@ -396,9 +372,9 @@ def create_app() -> Flask:
 
         return jsonify({"activities": [serialize_activity(item) for item in activities]})
 
-    @sock.route("/ws/werewolf")
-    def werewolf_socket(ws: Any) -> None:
-        werewolf_room_manager.register_socket(ws)
+    @sock.route("/ws/liars-bar")
+    def liars_bar_socket(ws: Any) -> None:
+        liars_bar_manager.register_socket(ws)
         try:
             while True:
                 try:
@@ -410,7 +386,7 @@ def create_app() -> Flask:
                 if isinstance(message, str) and message.strip().lower() == "ping":
                     ws.send(json.dumps({"type": "pong"}, ensure_ascii=False))
         finally:
-            werewolf_room_manager.unregister_socket(ws)
+            liars_bar_manager.unregister_socket(ws)
 
     @sock.route("/ws/online")
     def online_users_socket(ws: Any) -> None:
