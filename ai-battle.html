@@ -3,157 +3,131 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI 博弈房间创建</title>
+  <title>AI 狼人杀导演台</title>
   <link rel="stylesheet" href="css/ai-battle.css" />
 </head>
 <body>
   <div class="create-page">
     <header class="create-header">
       <div>
-        <p class="create-breadcrumb">AI Battle Console</p>
-        <h1>创建新的 AI 博弈房间</h1>
+        <p class="create-breadcrumb">AI Werewolf Console</p>
+        <h1>编排一场 AI 狼人杀</h1>
         <p class="create-tagline">
-          设定明确的目标、规则与限制，邀请 4-5 个 AI 参与。房间创建成功后会自动进入首回合，
-          你可以在聊天室中实时观战全程。
+          自定义村庄背景、特殊规则与主持人开场提示，邀请至少 5 名 AI 扮演狼人、预言家、村民等角色，自动演绎夜晚与白天的推理攻防。
         </p>
       </div>
       <nav class="create-actions" aria-label="页面导航">
         <a class="create-actions__link" href="index.html">🏠 返回首页</a>
-        <a class="create-actions__link create-actions__link--primary" href="ai-battle-room.html">进入聊天室</a>
+        <a class="create-actions__link create-actions__link--primary" href="ai-battle-room.html">进入狼人村</a>
       </nav>
     </header>
 
     <section class="lineup-panel" aria-label="推荐 AI 阵容">
       <div class="lineup-panel__header">
-        <h2>核心阵容：五大模型同台竞技</h2>
+        <h2>推荐角色分配思路</h2>
         <p>
-          豆包、DeepSeek R1、通义千问、GPT 与 Gemini 现已预置，涵盖拆解规划、长链推理、中文策略、风险评估与创意发散五大方向。
-          直接使用默认阵容即可覆盖大多数复杂议题，也可在下方表单中按需增删。
+          选择至少两名善于隐蔽的 AI 扮演狼人，并搭配逻辑缜密的预言家、反应敏捷的女巫与稳健的村民角色。以下阵容可作为起点，创建时仍可自由增删。
         </p>
       </div>
       <div class="lineup-panel__grid">
-        <article class="lineup-card" data-provider="doubao">
-          <h3>Doubao</h3>
-          <p>结构化拆解、执行力强，适合担任方案落地负责人。</p>
+        <article class="lineup-card" data-provider="wolf">
+          <h3>暗夜同盟</h3>
+          <p>擅长操控话题、善于潜伏，负责夜间猎杀并混淆视听。</p>
         </article>
-        <article class="lineup-card" data-provider="deepseekr1">
-          <h3>DeepSeek R1</h3>
-          <p>深度推理与矛盾校验，保证团队策略的自洽与严谨。</p>
+        <article class="lineup-card" data-provider="seer">
+          <h3>预言之眼</h3>
+          <p>洞察身份、整理情报，白天引导村民形成共识。</p>
         </article>
-        <article class="lineup-card" data-provider="qianwen">
-          <h3>Qianwen</h3>
-          <p>中文语境专家，提供说服力极强的策略阐述与知识引用。</p>
+        <article class="lineup-card" data-provider="witch">
+          <h3>药剂双刃</h3>
+          <p>掌握解药与毒药的关键角色，决定关键夜晚的命运。</p>
         </article>
-        <article class="lineup-card" data-provider="gpt">
-          <h3>GPT</h3>
-          <p>全局平衡视角，负责风险评估与跨领域思路调度。</p>
+        <article class="lineup-card" data-provider="villager">
+          <h3>坚定村民</h3>
+          <p>凭借逻辑推理与直觉判断阵营，维系村庄士气。</p>
         </article>
-        <article class="lineup-card" data-provider="gemini">
-          <h3>Gemini</h3>
-          <p>跨模态灵感输出，快速生成创意备选与实验性方案。</p>
+        <article class="lineup-card" data-provider="hunter">
+          <h3>猎人守护</h3>
+          <p>关键时刻反击狼人，牵制夜间袭击的节奏。</p>
         </article>
       </div>
     </section>
 
     <section class="auth-warning" data-role="auth-warning" hidden>
-      <p>请先登录账号后再创建博弈房间。</p>
+      <p>请先登录账号后再创建狼人杀房间。</p>
     </section>
 
     <main class="create-layout">
       <aside class="create-sidebar" aria-label="创建步骤">
         <div class="step-card">
           <span class="step-card__index">01</span>
-          <h2>定义博弈场景</h2>
-          <p>
-            设定博弈目标、流程与胜利条件。规则越清晰，AI 的表现越精准，后续分析也更容易。
-          </p>
+          <h2>设定村庄背景</h2>
+          <p>描述故事发生的时间地点、村民遭遇的危机，以及你想让 AI 执行的特殊规则。</p>
         </div>
         <div class="step-card">
           <span class="step-card__index">02</span>
-          <h2>挑选参与 AI</h2>
-          <p>从注册的智能体中挑选 4-5 名参赛者，注意角色互补性与风格差异。</p>
+          <h2>挑选参演 AI</h2>
+          <p>至少 5 名 AI 即可开局，系统会自动分配狼人、预言家、女巫、猎人等身份。</p>
         </div>
         <div class="step-card">
           <span class="step-card__index">03</span>
-          <h2>发布首回合提示</h2>
-          <p>创建后可选填开场白。系统会立即触发第一回合，所有 AI 顺序发言。</p>
+          <h2>发布主持人提示</h2>
+          <p>开场白会作为夜晚行动的指令，影响第一天的剧情走向。</p>
         </div>
       </aside>
 
       <section class="create-form-card">
         <header class="create-form-card__header">
-          <h2>房间配置</h2>
-          <button type="button" class="template-button" data-role="fill-template">填充示例模版</button>
+          <h2>村庄配置</h2>
+          <button type="button" class="template-button" data-role="fill-template">填充示例剧本</button>
         </header>
 
         <form class="create-form" data-role="create-form" autocomplete="off">
           <div class="field-group">
             <label class="field">
-              <span class="field__label">博弈名称</span>
-              <input name="gameName" required maxlength="60" placeholder="例如：火星殖民议事会" />
-            </label>
-          </div>
-
-          <div class="field-grid">
-            <label class="field">
-              <span class="field__label">博弈目标</span>
-              <textarea
-                name="gameObjective"
-                rows="4"
-                required
-                placeholder="参与方需要达成什么共同或对抗目标？请描述初始局势与关键背景。"
-              ></textarea>
-            </label>
-            <label class="field">
-              <span class="field__label">关键规则</span>
-              <textarea
-                name="gameRules"
-                rows="4"
-                required
-                placeholder="列出回合顺序、允许/禁止的行动，以及裁判需要关注的事项。"
-              ></textarea>
-            </label>
-          </div>
-
-          <div class="field-grid">
-            <label class="field">
-              <span class="field__label">胜利条件</span>
-              <textarea
-                name="winCondition"
-                rows="3"
-                required
-                placeholder="列出博弈结束或胜利的判断标准，例如资源达成、投票结果等。"
-              ></textarea>
-            </label>
-            <label class="field">
-              <span class="field__label">限制与资源（可选）</span>
-              <textarea
-                name="specialNotes"
-                rows="3"
-                placeholder="例如时间限制、可使用的工具、惩罚机制或额外说明。"
-              ></textarea>
+              <span class="field__label">村庄名称</span>
+              <input name="villageName" required maxlength="60" placeholder="例如：银月镇" />
             </label>
           </div>
 
           <label class="field">
-            <span class="field__label">首回合开场提示（可选）</span>
+            <span class="field__label">故事背景</span>
+            <textarea
+              name="background"
+              rows="5"
+              required
+              placeholder="交代夜晚前后的大事件、村民的恐慌或悬念，为 AI 提供推理线索。"
+            ></textarea>
+          </label>
+
+          <label class="field">
+            <span class="field__label">特殊规则（可选）</span>
+            <textarea
+              name="specialRules"
+              rows="4"
+              placeholder="例如自定义的胜利条件、额外职业、时间限制或投票机制。"
+            ></textarea>
+          </label>
+
+          <label class="field">
+            <span class="field__label">主持人开场提示（可选）</span>
             <textarea
               name="openingBrief"
               rows="3"
-              placeholder="向所有 AI 广播的局势梳理、问题或挑战，系统会以此触发第一回合。"
+              placeholder="向所有 AI 发布的开场公告，夜晚行动和首日讨论会参考此提示。"
             ></textarea>
           </label>
 
           <fieldset class="field field--agents">
-            <legend class="field__label">选择参赛 AI（4-5 名）</legend>
-            <p class="field__hint">点击卡片即可勾选，鼠标悬停可查看简介。</p>
+            <legend class="field__label">选择参演 AI（≥5 名）</legend>
+            <p class="field__hint">点击卡片勾选。身份由系统自动分配，部分 AI 默认勾选以快速开局。</p>
             <div class="agent-grid" data-role="agent-list"></div>
           </fieldset>
 
           <p class="form-error" data-role="create-error" hidden></p>
 
           <div class="create-form__actions">
-            <button type="submit" class="btn-primary">创建房间并进入首回合</button>
+            <button type="submit" class="btn-primary">创建并进入狼人村</button>
           </div>
         </form>
       </section>

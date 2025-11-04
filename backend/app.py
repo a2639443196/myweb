@@ -13,8 +13,8 @@ from flask import Flask, abort, jsonify, make_response, request, send_from_direc
 from flask_sock import Sock
 
 from backend.ai_registry import AgentRegistry
-from backend.battle_room import (
-    BattleRoomManager,
+from backend.werewolf_room import (
+    WerewolfRoomManager,
     RoomAlreadyExistsError,
     RoomNotFoundError,
     RoomPermissionError,
@@ -103,7 +103,7 @@ class OnlineUserNotifier:
 
 online_user_notifier: Optional[OnlineUserNotifier] = None
 agent_registry = AgentRegistry(AI_CONFIG_PATH)
-battle_room_manager = BattleRoomManager(agent_registry)
+werewolf_room_manager = WerewolfRoomManager(agent_registry)
 
 
 def notify_online_users_change() -> None:
@@ -255,38 +255,42 @@ def create_app() -> Flask:
 
         return response
 
-    @app.get("/api/battle/agents")
-    def battle_agents() -> Any:
+    @app.get("/api/werewolf/agents")
+    def werewolf_agents() -> Any:
         snapshot = agent_registry.snapshot()
         return jsonify(snapshot)
 
-    @app.get("/api/battle/room")
-    def battle_room_state() -> Any:
-        state = battle_room_manager.get_state()
+    @app.get("/api/werewolf/room")
+    def werewolf_room_state() -> Any:
+        state = werewolf_room_manager.get_state()
         if not state:
             return jsonify({"error": "房间未创建"}), 404
         return jsonify(state)
 
-    @app.post("/api/battle/room")
-    def battle_room_create() -> Any:
+    @app.post("/api/werewolf/room")
+    def werewolf_room_create() -> Any:
         account = get_current_account()
         if not account:
             return jsonify({"error": "未登录"}), 401
 
         payload = request.get_json(silent=True) or {}
-        game_name = str(payload.get("gameName", "")).strip()
-        game_rules = str(payload.get("gameRules", "")).strip()
+        village_name = str(payload.get("villageName", "")).strip()
+        background = str(payload.get("background", "")).strip()
+        special_rules = str(payload.get("specialRules", "")).strip()
+        opening_brief = str(payload.get("openingBrief", "")).strip()
         agent_ids = payload.get("agentIds")
 
         if not isinstance(agent_ids, list):
             return jsonify({"error": "agentIds 必须是数组"}), 400
 
         try:
-            room = battle_room_manager.create_room(
+            room = werewolf_room_manager.create_room(
                 judge_account=account,
-                game_name=game_name,
-                game_rules=game_rules,
+                village_name=village_name,
+                background=background,
+                special_rules=special_rules,
                 agent_ids=[str(item) for item in agent_ids],
+                opening_brief=opening_brief,
             )
         except RoomAlreadyExistsError:
             return jsonify({"error": "房间已存在，无法重复创建"}), 409
@@ -298,8 +302,8 @@ def create_app() -> Flask:
 
         return jsonify(room.to_payload())
 
-    @app.post("/api/battle/round")
-    def battle_room_advance() -> Any:
+    @app.post("/api/werewolf/advance")
+    def werewolf_room_advance() -> Any:
         account = get_current_account()
         if not account:
             return jsonify({"error": "未登录"}), 401
@@ -308,7 +312,7 @@ def create_app() -> Flask:
         judge_message = str(payload.get("judgeMessage", ""))
 
         try:
-            room = battle_room_manager.advance_round(account=account, judge_message=judge_message)
+            room = werewolf_room_manager.advance_phase(account=account, judge_message=judge_message)
         except RoomNotFoundError:
             return jsonify({"error": "房间未创建"}), 404
         except RoomPermissionError as error:
@@ -318,14 +322,14 @@ def create_app() -> Flask:
 
         return jsonify(room.to_payload())
 
-    @app.delete("/api/battle/room")
-    def battle_room_close() -> Any:
+    @app.delete("/api/werewolf/room")
+    def werewolf_room_close() -> Any:
         account = get_current_account()
         if not account:
             return jsonify({"error": "未登录"}), 401
 
         try:
-            battle_room_manager.close_room(account=account)
+            werewolf_room_manager.close_room(account=account)
         except RoomNotFoundError:
             return jsonify({"error": "房间未创建"}), 404
         except RoomPermissionError as error:
@@ -392,9 +396,9 @@ def create_app() -> Flask:
 
         return jsonify({"activities": [serialize_activity(item) for item in activities]})
 
-    @sock.route("/ws/battle")
-    def battle_socket(ws: Any) -> None:
-        battle_room_manager.register_socket(ws)
+    @sock.route("/ws/werewolf")
+    def werewolf_socket(ws: Any) -> None:
+        werewolf_room_manager.register_socket(ws)
         try:
             while True:
                 try:
@@ -406,7 +410,7 @@ def create_app() -> Flask:
                 if isinstance(message, str) and message.strip().lower() == "ping":
                     ws.send(json.dumps({"type": "pong"}, ensure_ascii=False))
         finally:
-            battle_room_manager.unregister_socket(ws)
+            werewolf_room_manager.unregister_socket(ws)
 
     @sock.route("/ws/online")
     def online_users_socket(ws: Any) -> None:

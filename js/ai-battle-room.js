@@ -21,9 +21,11 @@ const elements = {
   chatArea: document.querySelector('[data-role="chat-area"]'),
   emptyState: document.querySelector('[data-role="empty-state"]'),
   roomTitle: document.querySelector('[data-role="room-title"]'),
+  phase: document.querySelector('[data-role="phase"]'),
   round: document.querySelector('[data-role="round"]'),
   judgeName: document.querySelector('[data-role="judge-name"]'),
   roomCreated: document.querySelector('[data-role="room-created"]'),
+  roomBackground: document.querySelector('[data-role="room-background"]'),
   roomRules: document.querySelector('[data-role="room-rules"]'),
   chatLog: document.querySelector('[data-role="chat-log"]'),
   participantList: document.querySelector('[data-role="participant-list"]'),
@@ -71,7 +73,7 @@ const fetchSession = async () => {
 
 const fetchRoomState = async () => {
   try {
-    const payload = await requestJSON('/api/battle/room');
+    const payload = await requestJSON('/api/werewolf/room');
     applyRoomPayload(payload);
   } catch (error) {
     if (error instanceof HttpError && error.status === 404) {
@@ -127,6 +129,18 @@ const clearChatArea = () => {
   if (elements.roomStatus) {
     elements.roomStatus.textContent = '等待创建房间';
   }
+  if (elements.phase) {
+    elements.phase.textContent = '-';
+  }
+  if (elements.round) {
+    elements.round.textContent = '0';
+  }
+  if (elements.roomBackground) {
+    elements.roomBackground.textContent = '-';
+  }
+  if (elements.roomRules) {
+    elements.roomRules.textContent = '如未填写特殊规则，则采用经典狼人杀流程。';
+  }
 };
 
 const updateChatArea = () => {
@@ -134,10 +148,13 @@ const updateChatArea = () => {
   if (!room) return;
 
   if (elements.roomTitle) {
-    elements.roomTitle.textContent = room.gameName || '未命名对局';
+    elements.roomTitle.textContent = room.gameName || '未命名的狼人村';
   }
   if (elements.round) {
-    elements.round.textContent = String(room.round ?? 0);
+    elements.round.textContent = String(room.day ?? 0);
+  }
+  if (elements.phase) {
+    elements.phase.textContent = room.phaseTitle || room.phase || '未知阶段';
   }
   if (elements.judgeName) {
     elements.judgeName.textContent = room.judge?.username ?? '未知';
@@ -145,11 +162,16 @@ const updateChatArea = () => {
   if (elements.roomCreated) {
     elements.roomCreated.textContent = formatDate(room.createdAt);
   }
+  if (elements.roomBackground) {
+    elements.roomBackground.textContent = room.background || '暂无背景信息。';
+  }
   if (elements.roomRules) {
-    elements.roomRules.textContent = room.gameRules || '';
+    elements.roomRules.textContent = room.specialRules?.trim()
+      ? room.specialRules
+      : '如未填写特殊规则，则采用经典狼人杀流程。';
   }
 
-  renderParticipants(room.agents ?? []);
+  renderParticipants(room.players ?? []);
   renderHistory(state.history);
   updateJudgeControls();
   updateRoomStats();
@@ -160,12 +182,19 @@ const renderParticipants = (participants) => {
   elements.participantList.innerHTML = '';
   participants.forEach((participant, index) => {
     const item = document.createElement('li');
+    item.className = 'participant-list__item';
+    if (!participant.alive) {
+      item.classList.add('participant-list__item--dead');
+    }
+
     const title = document.createElement('strong');
     title.textContent = `${index + 1}. ${participant.displayName ?? participant.id}`;
+
     const meta = document.createElement('span');
-    const provider = participant.provider ?? '未知来源';
-    const desc = participant.description ? ` · ${participant.description}` : '';
-    meta.textContent = `${provider}${desc}`;
+    const roleLabel = participant.role ? ` · 身份：${participant.role}` : '';
+    const statusLabel = participant.alive ? '存活' : '出局';
+    meta.textContent = `${statusLabel}${roleLabel}`;
+
     item.append(title, meta);
     elements.participantList.append(item);
   });
@@ -202,7 +231,7 @@ const renderHistory = (history) => {
 
     const tag = document.createElement('span');
     tag.className = 'message__tag';
-    tag.textContent = getMessageTag(entry.type);
+    tag.textContent = formatMessageTag(entry);
 
     const timestamp = document.createElement('time');
     timestamp.className = 'message__timestamp';
@@ -236,11 +265,13 @@ const updateRoomStats = () => {
   if (!room) return;
   if (elements.latestMessage) {
     const lastEntry = state.history[state.history.length - 1];
-    elements.latestMessage.textContent = lastEntry?.content ? truncate(lastEntry.content, 120) : '暂无消息';
+    const summary = lastEntry?.content ? truncate(lastEntry.content, 120) : '暂无消息';
+    elements.latestMessage.textContent = summary;
   }
   if (elements.roomStatus) {
-    const roundNumber = room.round ?? 0;
-    elements.roomStatus.textContent = roundNumber > 0 ? `进行到第 ${roundNumber} 回合` : '准备阶段';
+    const phase = room.phaseTitle || room.phase;
+    const day = room.day ?? 0;
+    elements.roomStatus.textContent = `${phase ?? '未知阶段'} · 第 ${day} 天`;
   }
 };
 
@@ -256,16 +287,25 @@ const getAvatarInitial = (name) => {
   return first || '系';
 };
 
-const getMessageTag = (type) => {
-  switch (type) {
-    case 'ai':
-      return 'AI 发言';
-    case 'judge':
-      return '裁判提示';
-    case 'system':
-    default:
-      return '系统';
+const formatMessageTag = (entry) => {
+  const baseTag = (() => {
+    switch (entry.type) {
+      case 'ai':
+        return 'AI 发言';
+      case 'judge':
+        return '主持人提示';
+      case 'system':
+      default:
+        return '系统播报';
+    }
+  })();
+  if (entry.phase) {
+    return `${baseTag} · ${entry.phase}`;
   }
+  if (entry.round) {
+    return `${baseTag} · 第 ${entry.round} 天`;
+  }
+  return baseTag;
 };
 
 const formatTime = (value) => {
@@ -296,7 +336,7 @@ const handleRound = async () => {
   const judgeMessage = elements.judgeMessage?.value ?? '';
   try {
     setJudgeDisabled(true);
-    const result = await requestJSON('/api/battle/round', {
+    const result = await requestJSON('/api/werewolf/advance', {
       method: 'POST',
       body: JSON.stringify({ judgeMessage }),
     });
@@ -306,7 +346,7 @@ const handleRound = async () => {
     applyRoomPayload(result);
     showRoundError('');
   } catch (error) {
-    const message = error instanceof HttpError ? error.message : '触发回合失败';
+    const message = error instanceof HttpError ? error.message : '推进阶段失败';
     showRoundError(message);
   } finally {
     setJudgeDisabled(false);
@@ -317,7 +357,7 @@ const handleCloseRoom = async () => {
   if (!state.isJudge) return;
   try {
     setJudgeDisabled(true);
-    await requestJSON('/api/battle/room', { method: 'DELETE' });
+    await requestJSON('/api/werewolf/room', { method: 'DELETE' });
     applyRoomPayload(null);
   } catch (error) {
     const message = error instanceof HttpError ? error.message : '结束房间失败';
@@ -352,7 +392,7 @@ const connectSocket = () => {
   }
   state.shouldReconnect = true;
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const socket = new WebSocket(`${protocol}//${window.location.host}/ws/battle`);
+  const socket = new WebSocket(`${protocol}//${window.location.host}/ws/werewolf`);
   state.socket = socket;
 
   socket.addEventListener('open', () => {

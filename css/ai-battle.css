@@ -11,11 +11,11 @@
   --radius-md: 14px;
   --shadow-lg: 0 32px 64px -40px rgba(15, 23, 42, 0.8);
   --shadow-sm: 0 16px 32px -24px rgba(15, 23, 42, 0.6);
-  --doubao: linear-gradient(135deg, rgba(56, 189, 248, 0.95), rgba(56, 189, 248, 0.7));
-  --deepseek: linear-gradient(135deg, rgba(249, 115, 22, 0.95), rgba(234, 88, 12, 0.6));
-  --qianwen: linear-gradient(135deg, rgba(124, 58, 237, 0.9), rgba(139, 92, 246, 0.6));
-  --gpt: linear-gradient(135deg, rgba(74, 222, 128, 0.9), rgba(34, 197, 94, 0.6));
-  --gemini: linear-gradient(135deg, rgba(129, 140, 248, 0.9), rgba(59, 130, 246, 0.6));
+  --wolf: linear-gradient(135deg, rgba(248, 113, 113, 0.9), rgba(239, 68, 68, 0.65));
+  --seer: linear-gradient(135deg, rgba(129, 140, 248, 0.92), rgba(59, 130, 246, 0.68));
+  --witch: linear-gradient(135deg, rgba(236, 72, 153, 0.9), rgba(217, 70, 239, 0.65));
+  --villager: linear-gradient(135deg, rgba(34, 197, 94, 0.88), rgba(74, 222, 128, 0.62));
+  --hunter: linear-gradient(135deg, rgba(245, 158, 11, 0.88), rgba(234, 179, 8, 0.6));
 }
 
 * {
@@ -117,24 +117,24 @@ body {
   opacity: 0.55;
 }
 
-.lineup-card[data-provider="doubao"]::before {
-  background: var(--doubao);
+.lineup-card[data-provider="wolf"]::before {
+  background: var(--wolf);
 }
 
-.lineup-card[data-provider="deepseekr1"]::before {
-  background: var(--deepseek);
+.lineup-card[data-provider="seer"]::before {
+  background: var(--seer);
 }
 
-.lineup-card[data-provider="qianwen"]::before {
-  background: var(--qianwen);
+.lineup-card[data-provider="witch"]::before {
+  background: var(--witch);
 }
 
-.lineup-card[data-provider="gpt"]::before {
-  background: var(--gpt);
+.lineup-card[data-provider="villager"]::before {
+  background: var(--villager);
 }
 
-.lineup-card[data-provider="gemini"]::before {
-  background: var(--gemini);
+.lineup-card[data-provider="hunter"]::before {
+  background: var(--hunter);
 }
 
 .create-header h1 {

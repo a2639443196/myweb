@@ -130,6 +130,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .channel__title h2 {
@@ -137,6 +138,7 @@ body {
   font-size: 1.6rem;
 }
 
+.channel__phase,
 .channel__round {
   padding: 4px 10px;
   border-radius: 8px;
@@ -162,8 +164,23 @@ body {
   color: rgba(226, 232, 240, 0.88);
   line-height: 1.7;
   white-space: pre-wrap;
-  max-height: 220px;
+  max-height: 260px;
   overflow-y: auto;
+}
+
+.channel__topic h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: rgba(224, 231, 255, 0.92);
+}
+
+.channel__topic p {
+  margin: 0 0 16px;
+  color: rgba(226, 232, 240, 0.82);
+}
+
+.channel__topic p:last-child {
+  margin-bottom: 0;
 }
 
 .channel__log {
@@ -306,7 +323,7 @@ body {
   gap: 12px;
 }
 
-.participant-list li {
+.participant-list__item {
   padding: 10px 12px;
   border-radius: 12px;
   background: rgba(45, 47, 56, 0.7);
@@ -316,11 +333,23 @@ body {
   gap: 4px;
 }
 
-.participant-list strong {
+.participant-list__item--dead {
+  opacity: 0.65;
+  position: relative;
+}
+
+.participant-list__item--dead::after {
+  content: '';
+  position: absolute;
+  inset: 8px 12px;
+  border-top: 1px solid rgba(248, 113, 113, 0.4);
+}
+
+.participant-list__item strong {
   font-weight: 600;
 }
 
-.participant-list span {
+.participant-list__item span {
   color: var(--muted);
   font-size: 0.85rem;
 }

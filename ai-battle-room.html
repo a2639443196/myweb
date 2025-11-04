@@ -3,32 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI 博弈聊天室</title>
+  <title>AI 狼人杀聊天室</title>
   <link rel="stylesheet" href="css/ai-battle-room.css" />
 </head>
 <body>
   <div class="room-page">
     <header class="room-header">
       <div>
-        <p class="room-breadcrumb">AI Battle Console</p>
-        <h1>实时博弈聊天室</h1>
+        <p class="room-breadcrumb">AI Werewolf Console</p>
+        <h1>实时狼人杀戏剧现场</h1>
         <p class="room-tagline">
-          观战或作为裁判掌控比赛节奏。频道使用接近 Discord 的对话风格，右侧提供裁判工具与参与者状态。
+          观看 AI 在夜晚潜行、白天对峙的全过程。主持人可随时插入剧情提示、推进阶段或结束整场演绎。
         </p>
       </div>
       <nav class="room-actions" aria-label="页面导航">
         <a class="room-actions__link" href="index.html">🏠 返回首页</a>
-        <a class="room-actions__link room-actions__link--primary" href="ai-battle.html">新建房间</a>
+        <a class="room-actions__link room-actions__link--primary" href="ai-battle.html">新建狼人村</a>
       </nav>
     </header>
 
     <main class="room-layout">
       <section class="channel" data-role="empty-state" hidden>
         <div class="empty-state">
-          <div class="empty-state__icon">🛰️</div>
-          <h2>暂无房间正在运行</h2>
-          <p>请先创建新的博弈房间，或稍后刷新查看是否有新的实时对局。</p>
-          <a class="empty-state__link" href="ai-battle.html">前往创建房间</a>
+          <div class="empty-state__icon">🌕</div>
+          <h2>暂无狼人杀房间</h2>
+          <p>创建一个新的村庄，让 AI 自行推演狼人、村民与预言家的对局。</p>
+          <a class="empty-state__link" href="ai-battle.html">立即创建</a>
         </div>
       </section>
 
@@ -36,21 +36,27 @@
         <header class="channel__header">
           <div class="channel__title">
             <h2 data-role="room-title">-</h2>
-            <span class="channel__round">第 <strong data-role="round">0</strong> 回合</span>
+            <span class="channel__phase">阶段：<strong data-role="phase">-</strong></span>
+            <span class="channel__round">第 <strong data-role="round">0</strong> 天</span>
           </div>
           <div class="channel__meta">
-            <span>裁判：<strong data-role="judge-name">-</strong></span>
+            <span>主持人：<strong data-role="judge-name">-</strong></span>
             <span>创建于 <time data-role="room-created">-</time></span>
           </div>
         </header>
-        <article class="channel__topic" data-role="room-rules"></article>
+        <article class="channel__topic">
+          <h3>故事背景</h3>
+          <p data-role="room-background">-</p>
+          <h3>特殊规则</h3>
+          <p data-role="room-rules">如未填写特殊规则，则采用经典狼人杀流程。</p>
+        </article>
         <ul class="channel__log" data-role="chat-log"></ul>
       </section>
 
       <aside class="sidebar">
         <section class="sidebar__card">
           <header class="sidebar__card-header">
-            <h3>参与者</h3>
+            <h3>参演 AI</h3>
             <span class="sidebar__badge" data-role="participant-count">0</span>
           </header>
           <ul class="participant-list" data-role="participant-list"></ul>
@@ -58,7 +64,7 @@
 
         <section class="sidebar__card" data-role="room-stats">
           <header class="sidebar__card-header">
-            <h3>房间信息</h3>
+            <h3>房间情报</h3>
           </header>
           <dl class="room-stats">
             <div>
@@ -67,22 +73,22 @@
             </div>
             <div>
               <dt>当前状态</dt>
-              <dd data-role="room-status">等待更新</dd>
+              <dd data-role="room-status">等待开局</dd>
             </div>
           </dl>
         </section>
 
         <section class="sidebar__card sidebar__card--judge" data-role="judge-controls" hidden>
           <header class="sidebar__card-header">
-            <h3>裁判控制台</h3>
+            <h3>主持人控制台</h3>
           </header>
           <label class="judge-field">
-            <span class="judge-field__label">下一回合提示</span>
-            <textarea data-role="judge-message" rows="4" placeholder="可选：简述局势或抛出新的问题"></textarea>
+            <span class="judge-field__label">插入剧情提示（可选）</span>
+            <textarea data-role="judge-message" rows="4" placeholder="例如：村口传来尖叫或新的线索出现"></textarea>
           </label>
           <div class="judge-actions">
-            <button type="button" class="btn-accent" data-role="trigger-round">触发下一回合</button>
-            <button type="button" class="btn-danger" data-role="close-room">结束房间</button>
+            <button type="button" class="btn-accent" data-role="trigger-round">推进下一阶段</button>
+            <button type="button" class="btn-danger" data-role="close-room">结束本局</button>
           </div>
           <p class="form-error" data-role="round-error" hidden></p>
         </section>
