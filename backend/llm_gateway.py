@@ -93,35 +93,11 @@ class LLMGateway:
         if not messages:
             raise LLMGenerationError("缺少可用于生成的提示信息。")
 
-        client = self._get_openai_client(settings)
-        try:
-            response = client.chat.completions.create(
-                model=settings.model,
-                messages=messages,
-                **settings.params,
-            )
-        except Exception as exc:  # pragma: no cover - network errors
-            logger.exception("OpenAI 接口调用失败：%s", exc)
-            raise LLMGenerationError("OpenAI 接口调用失败。") from exc
-
-        choice = response.choices[0] if response.choices else None
-        if not choice or not getattr(choice.message, "content", ""):  # pragma: no cover - safety
-            raise LLMGenerationError("模型未返回内容。")
-
-        content = choice.message.content
-        if isinstance(content, list):  # 一些实现会返回分段内容
-            joined_parts = "".join(part.get("text", "") for part in content if isinstance(part, dict))
-            content_text = joined_parts.strip()
-        else:
-            content_text = str(content).strip()
-
-        if not content_text:
-            raise LLMGenerationError("模型返回内容为空。")
-
+        content_text, _ = self._invoke_openai_chat(settings, messages)
         return content_text
 
     def _resolve_openai_settings(
-        self, agent: AgentDefinition, provider_key: str
+        self, agent: AgentDefinition, provider_key: str, *, model_override: Optional[str] = None
     ) -> _OpenAISettings:
         metadata = agent.metadata or {}
         defaults = self._PROVIDER_DEFAULTS.get(provider_key, {})
@@ -142,7 +118,7 @@ class LLMGateway:
         if not base_url:
             base_url = str(metadata.get("base_url") or defaults.get("base_url") or "").strip() or None
 
-        model = str(metadata.get("model_override") or agent.model or "").strip()
+        model = str(model_override or metadata.get("model_override") or agent.model or "").strip()
         if not model:
             raise LLMGenerationError("未指定可用的模型名称。")
 
@@ -154,6 +130,52 @@ class LLMGateway:
         params.setdefault("temperature", 0.7)
 
         return _OpenAISettings(api_key=api_key, base_url=base_url, model=model, params=params)
+
+    def _invoke_openai_chat(
+        self,
+        settings: _OpenAISettings,
+        messages: List[ChatCompletionMessageParam],
+        *,
+        params_override: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[str, Optional[str]]:
+        client = self._get_openai_client(settings)
+        payload = dict(settings.params)
+        if params_override:
+            payload.update(params_override)
+
+        try:
+            response = client.chat.completions.create(
+                model=settings.model,
+                messages=messages,
+                **payload,
+            )
+        except Exception as exc:  # pragma: no cover - network errors
+            logger.exception("OpenAI 接口调用失败：%s", exc)
+            raise LLMGenerationError("OpenAI 接口调用失败。") from exc
+
+        choice = response.choices[0] if response.choices else None
+        if not choice or not getattr(choice.message, "content", ""):
+            raise LLMGenerationError("模型未返回内容。")
+
+        message = choice.message
+        content = message.content
+        if isinstance(content, list):
+            text = "".join(part.get("text", "") for part in content if isinstance(part, dict)).strip()
+        else:
+            text = str(content).strip()
+
+        if not text:
+            raise LLMGenerationError("模型返回内容为空。")
+
+        reasoning_raw = getattr(message, "reasoning_content", None)
+        if isinstance(reasoning_raw, list):
+            reasoning = "".join(part.get("text", "") for part in reasoning_raw if isinstance(part, dict)).strip() or None
+        elif reasoning_raw:
+            reasoning = str(reasoning_raw).strip() or None
+        else:
+            reasoning = None
+
+        return text, reasoning
 
     def _get_openai_client(self, settings: _OpenAISettings) -> OpenAI:
         cache_key = (settings.api_key, settings.base_url)
@@ -181,4 +203,19 @@ class LLMGateway:
         if user_prompt:
             messages.append({"role": "user", "content": user_prompt})
         return messages
+
+    def send_chat(
+        self,
+        agent: AgentDefinition,
+        messages: List[ChatCompletionMessageParam],
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        model_override: Optional[str] = None,
+    ) -> Tuple[str, Optional[str]]:
+        provider_key = agent.provider.lower().strip()
+        if provider_key not in {"doubao", "deepseekr1", "qianwen", "gpt"}:
+            raise LLMGenerationError(f"Provider '{agent.provider}' 未实现。")
+
+        settings = self._resolve_openai_settings(agent, provider_key, model_override=model_override)
+        return self._invoke_openai_chat(settings, messages, params_override=params)
 

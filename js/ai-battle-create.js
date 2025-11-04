@@ -1,11 +1,7 @@
 const TEMPLATE = {
-  villageName: '银月镇',
-  background:
-    '银月镇被接连不断的银色雾霭笼罩，族长在昨夜的祭坛旁离奇失踪。村民怀疑狼人潜伏，唯一的线索是一枚染血的银质徽章。',
-  specialRules:
-    '村庄钟楼会在白天公布上一夜的异常：若无人死亡则代表女巫可能救人或狼人未出手；若出现双亡则暗示女巫使用毒药。',
-  openingBrief:
-    '主持人公告：银色雾霭再次降临，守夜人听到铁匠铺方向传来低吼。所有人请密切关注与铁器相关的发言。',
+  title: '午夜的空弹轮盘',
+  scenario:
+    '深夜的地下酒馆里，六名老千围桌对赌。左轮手枪有一发实弹，每轮必须宣称打出目标牌。若被拆穿，就要扣动扳机。桌面上散落的筹码暗示：有人在暗中交换牌。',
 };
 
 class HttpError extends Error {
@@ -73,7 +69,7 @@ const toggleAuthWarning = (visible) => {
 
 const loadAgents = async () => {
   try {
-    const snapshot = await requestJSON('/api/werewolf/agents');
+    const snapshot = await requestJSON('/api/liars-bar/agents');
     state.agents = snapshot?.agents ?? [];
     renderAgentOptions();
   } catch (error) {
@@ -158,37 +154,30 @@ const handleCreate = async (event) => {
   if (!elements.form || state.submitting) return;
 
   const formData = new FormData(elements.form);
-  const villageName = formData.get('villageName')?.toString().trim() ?? '';
-  const background = formData.get('background')?.toString().trim() ?? '';
-  const specialRules = formData.get('specialRules')?.toString().trim() ?? '';
-  const openingBrief = formData.get('openingBrief')?.toString().trim() ?? '';
+  const title = formData.get('title')?.toString().trim() ?? '';
+  const scenario = formData.get('scenario')?.toString().trim() ?? '';
   const agentIds = collectSelectedAgents();
 
-  if (!villageName) {
-    showCreateError('请输入村庄名称。');
+  if (!scenario) {
+    showCreateError('请填写场景设定，为 AI 提供足够的对局背景。');
     return;
   }
-  if (!background) {
-    showCreateError('请填写故事背景，为 AI 提供足够的剧情信息。');
-    return;
-  }
-  if (agentIds.length < 5) {
-    showCreateError('请选择至少 5 名 AI。');
+  if (agentIds.length < 4) {
+    showCreateError('请选择至少 4 名 AI。');
     return;
   }
 
-  const payload = { villageName, background, specialRules, openingBrief, agentIds };
+  const payload = { title, scenario, agentIds };
 
   try {
     setSubmitting(true);
-    const result = await requestJSON('/api/werewolf/room', {
+    const result = await requestJSON('/api/liars-bar/game', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
     if (!result) {
       throw new Error('房间创建失败，请稍后再试。');
     }
-    await triggerFirstPhase();
     showCreateError('');
     window.location.href = 'ai-battle-room.html';
   } catch (error) {
@@ -196,7 +185,7 @@ const handleCreate = async (event) => {
       if (error.status === 401) {
         showCreateError('未登录或会话已过期，请先登录后再操作。');
       } else if (error.status === 409) {
-        showCreateError('当前已有狼人杀房间在运行，请先在聊天室结束后再尝试。');
+        showCreateError('当前已有骗子酒馆对决在进行，请稍后再试。');
       } else {
         showCreateError(error.message);
       }
@@ -205,20 +194,6 @@ const handleCreate = async (event) => {
     }
   } finally {
     setSubmitting(false);
-  }
-};
-
-const triggerFirstPhase = async () => {
-  try {
-    await requestJSON('/api/werewolf/advance', {
-      method: 'POST',
-      body: JSON.stringify({ judgeMessage: '' }),
-    });
-  } catch (error) {
-    if (error instanceof HttpError) {
-      throw new HttpError(`首轮推进失败：${error.message}`, error.status, error.payload);
-    }
-    throw error;
   }
 };
 
@@ -255,15 +230,11 @@ const updateFormAvailability = (enabled) => {
 
 const fillTemplate = () => {
   if (!elements.form) return;
-  const villageName = elements.form.querySelector('input[name="villageName"]');
-  const background = elements.form.querySelector('textarea[name="background"]');
-  const specialRules = elements.form.querySelector('textarea[name="specialRules"]');
-  const openingBrief = elements.form.querySelector('textarea[name="openingBrief"]');
+  const title = elements.form.querySelector('input[name="title"]');
+  const scenario = elements.form.querySelector('textarea[name="scenario"]');
 
-  if (villageName) villageName.value = TEMPLATE.villageName;
-  if (background) background.value = TEMPLATE.background;
-  if (specialRules) specialRules.value = TEMPLATE.specialRules;
-  if (openingBrief) openingBrief.value = TEMPLATE.openingBrief;
+  if (title) title.value = TEMPLATE.title;
+  if (scenario) scenario.value = TEMPLATE.scenario;
 };
 
 const initEvents = () => {

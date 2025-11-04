@@ -9,9 +9,9 @@ class HttpError extends Error {
 
 const state = {
   user: null,
-  room: null,
+  game: null,
   history: [],
-  isJudge: false,
+  isCreator: false,
   socket: null,
   reconnectTimer: null,
   shouldReconnect: true,
@@ -23,16 +23,14 @@ const elements = {
   roomTitle: document.querySelector('[data-role="room-title"]'),
   phase: document.querySelector('[data-role="phase"]'),
   round: document.querySelector('[data-role="round"]'),
+  targetCard: document.querySelector('[data-role="target-card"]'),
   judgeName: document.querySelector('[data-role="judge-name"]'),
   roomCreated: document.querySelector('[data-role="room-created"]'),
   roomBackground: document.querySelector('[data-role="room-background"]'),
-  roomRules: document.querySelector('[data-role="room-rules"]'),
   chatLog: document.querySelector('[data-role="chat-log"]'),
   participantList: document.querySelector('[data-role="participant-list"]'),
   participantCount: document.querySelector('[data-role="participant-count"]'),
   judgeControls: document.querySelector('[data-role="judge-controls"]'),
-  judgeMessage: document.querySelector('[data-role="judge-message"]'),
-  triggerRound: document.querySelector('[data-role="trigger-round"]'),
   closeRoom: document.querySelector('[data-role="close-room"]'),
   roundError: document.querySelector('[data-role="round-error"]'),
   latestMessage: document.querySelector('[data-role="latest-message"]'),
@@ -71,45 +69,47 @@ const fetchSession = async () => {
   }
 };
 
-const fetchRoomState = async () => {
+const fetchGameState = async () => {
   try {
-    const payload = await requestJSON('/api/werewolf/room');
-    applyRoomPayload(payload);
+    const snapshot = await requestJSON('/api/liars-bar/game');
+    applyGameSnapshot(snapshot);
   } catch (error) {
     if (error instanceof HttpError && error.status === 404) {
-      applyRoomPayload(null);
+      applyGameSnapshot(null);
     } else {
-      console.error('加载房间状态失败', error);
+      console.error('加载对局状态失败', error);
     }
   }
 };
 
-const applyRoomPayload = (payload) => {
-  if (!payload) {
-    state.room = null;
+const applyGameSnapshot = (payload) => {
+  if (!payload || !payload.game) {
+    state.game = null;
     state.history = [];
-    state.isJudge = false;
+    state.isCreator = false;
   } else {
-    state.room = payload.room;
+    state.game = payload.game;
     state.history = payload.history ?? [];
-    state.isJudge = Boolean(state.user && payload.room?.judge?.id === state.user.id);
+    state.isCreator = Boolean(
+      state.user && payload.game?.creator?.id && payload.game.creator.id === state.user.id,
+    );
   }
   updateLayout();
 };
 
 const updateLayout = () => {
-  const hasRoom = Boolean(state.room);
+  const hasGame = Boolean(state.game);
   if (elements.chatArea) {
-    elements.chatArea.hidden = !hasRoom;
+    elements.chatArea.hidden = !hasGame;
   }
   if (elements.emptyState) {
-    elements.emptyState.hidden = hasRoom;
+    elements.emptyState.hidden = hasGame;
   }
-  if (hasRoom) {
+  if (hasGame) {
     updateChatArea();
   } else {
     clearChatArea();
-    updateJudgeControls();
+    updateControls();
   }
 };
 
@@ -124,10 +124,10 @@ const clearChatArea = () => {
     elements.participantCount.textContent = '0';
   }
   if (elements.latestMessage) {
-    elements.latestMessage.textContent = '暂无消息';
+    elements.latestMessage.textContent = '-';
   }
   if (elements.roomStatus) {
-    elements.roomStatus.textContent = '等待创建房间';
+    elements.roomStatus.textContent = '-';
   }
   if (elements.phase) {
     elements.phase.textContent = '-';
@@ -135,45 +135,52 @@ const clearChatArea = () => {
   if (elements.round) {
     elements.round.textContent = '0';
   }
+  if (elements.targetCard) {
+    elements.targetCard.textContent = '-';
+  }
   if (elements.roomBackground) {
     elements.roomBackground.textContent = '-';
   }
-  if (elements.roomRules) {
-    elements.roomRules.textContent = '如未填写特殊规则，则采用经典狼人杀流程。';
+  if (elements.roomTitle) {
+    elements.roomTitle.textContent = '骗子酒馆对决';
+  }
+  if (elements.judgeName) {
+    elements.judgeName.textContent = '-';
+  }
+  if (elements.roomCreated) {
+    elements.roomCreated.textContent = '-';
   }
 };
 
 const updateChatArea = () => {
-  const room = state.room;
-  if (!room) return;
+  const game = state.game;
+  if (!game) return;
 
   if (elements.roomTitle) {
-    elements.roomTitle.textContent = room.gameName || '未命名的狼人村';
-  }
-  if (elements.round) {
-    elements.round.textContent = String(room.day ?? 0);
+    elements.roomTitle.textContent = game.title?.trim() || '未命名的骗子酒馆';
   }
   if (elements.phase) {
-    elements.phase.textContent = room.phaseTitle || room.phase || '未知阶段';
+    elements.phase.textContent = formatStatus(game.status);
+  }
+  if (elements.round) {
+    elements.round.textContent = String(game.round ?? 0);
+  }
+  if (elements.targetCard) {
+    elements.targetCard.textContent = game.targetCard ? String(game.targetCard) : '未揭晓';
   }
   if (elements.judgeName) {
-    elements.judgeName.textContent = room.judge?.username ?? '未知';
+    elements.judgeName.textContent = game.creator?.username ?? '未知';
   }
   if (elements.roomCreated) {
-    elements.roomCreated.textContent = formatDate(room.createdAt);
+    elements.roomCreated.textContent = formatDate(game.createdAt);
   }
   if (elements.roomBackground) {
-    elements.roomBackground.textContent = room.background || '暂无背景信息。';
-  }
-  if (elements.roomRules) {
-    elements.roomRules.textContent = room.specialRules?.trim()
-      ? room.specialRules
-      : '如未填写特殊规则，则采用经典狼人杀流程。';
+    elements.roomBackground.textContent = game.scenario?.trim() || '暂无场景描述。';
   }
 
-  renderParticipants(room.players ?? []);
+  renderParticipants(game.players ?? []);
   renderHistory(state.history);
-  updateJudgeControls();
+  updateControls();
   updateRoomStats();
 };
 
@@ -188,12 +195,13 @@ const renderParticipants = (participants) => {
     }
 
     const title = document.createElement('strong');
-    title.textContent = `${index + 1}. ${participant.displayName ?? participant.id}`;
+    title.textContent = `${index + 1}. ${participant.name ?? participant.agentId}`;
 
     const meta = document.createElement('span');
-    const roleLabel = participant.role ? ` · 身份：${participant.role}` : '';
+    const providerLabel = participant.provider ? ` · ${participant.provider}` : '';
+    const modelLabel = participant.model ? ` · ${participant.model}` : '';
     const statusLabel = participant.alive ? '存活' : '出局';
-    meta.textContent = `${statusLabel}${roleLabel}`;
+    meta.textContent = `${statusLabel} · 手牌 ${participant.handSize ?? 0} 张${providerLabel}${modelLabel}`;
 
     item.append(title, meta);
     elements.participantList.append(item);
@@ -212,9 +220,11 @@ const renderHistory = (history) => {
 
     const avatar = document.createElement('div');
     avatar.className = 'message__avatar';
-    if (entry.type === 'judge') {
+    if (entry.type === 'play') {
+      avatar.classList.add('message__avatar--ai');
+    } else if (entry.type === 'challenge') {
       avatar.classList.add('message__avatar--judge');
-    } else if (entry.type === 'system') {
+    } else if (entry.type === 'penalty') {
       avatar.classList.add('message__avatar--system');
     }
     avatar.textContent = getAvatarInitial(entry.author);
@@ -245,40 +255,45 @@ const renderHistory = (history) => {
     content.textContent = entry.content ?? '';
 
     body.append(meta, content);
+
+    if (entry.thinking) {
+      const details = document.createElement('details');
+      details.className = 'message__thinking';
+      const summary = document.createElement('summary');
+      summary.textContent = '查看推理过程';
+      const pre = document.createElement('pre');
+      pre.textContent = entry.thinking;
+      details.append(summary, pre);
+      body.append(details);
+    }
+
     message.append(avatar, body);
     elements.chatLog.append(message);
   });
   elements.chatLog.scrollTo({ top: elements.chatLog.scrollHeight, behavior: 'smooth' });
 };
 
-const updateJudgeControls = () => {
+const updateControls = () => {
   if (!elements.judgeControls) return;
-  elements.judgeControls.hidden = !state.isJudge;
-  const disabled = !state.isJudge;
-  if (elements.triggerRound) elements.triggerRound.disabled = disabled;
-  if (elements.closeRoom) elements.closeRoom.disabled = disabled;
-  if (elements.judgeMessage) elements.judgeMessage.disabled = disabled;
+  const hasGame = Boolean(state.game);
+  const gameActive = hasGame && ['running', 'preparing'].includes(state.game.status ?? '');
+  const visible = state.isCreator && gameActive;
+  elements.judgeControls.hidden = !visible;
+  if (elements.closeRoom) {
+    elements.closeRoom.disabled = !visible;
+  }
 };
 
 const updateRoomStats = () => {
-  const room = state.room;
-  if (!room) return;
-  if (elements.latestMessage) {
-    const lastEntry = state.history[state.history.length - 1];
-    const summary = lastEntry?.content ? truncate(lastEntry.content, 120) : '暂无消息';
-    elements.latestMessage.textContent = summary;
-  }
+  const game = state.game;
+  if (!game) return;
   if (elements.roomStatus) {
-    const phase = room.phaseTitle || room.phase;
-    const day = room.day ?? 0;
-    elements.roomStatus.textContent = `${phase ?? '未知阶段'} · 第 ${day} 天`;
+    elements.roomStatus.textContent = `第 ${game.round ?? 0} 轮`;
   }
-};
-
-const truncate = (value, maxLength) => {
-  if (!value) return '';
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength - 1)}…`;
+  if (elements.latestMessage) {
+    const current = game.currentPlayer || (state.history[state.history.length - 1]?.author ?? '-');
+    elements.latestMessage.textContent = current || '-';
+  }
 };
 
 const getAvatarInitial = (name) => {
@@ -288,24 +303,22 @@ const getAvatarInitial = (name) => {
 };
 
 const formatMessageTag = (entry) => {
-  const baseTag = (() => {
-    switch (entry.type) {
-      case 'ai':
-        return 'AI 发言';
-      case 'judge':
-        return '主持人提示';
-      case 'system':
-      default:
-        return '系统播报';
-    }
-  })();
-  if (entry.phase) {
-    return `${baseTag} · ${entry.phase}`;
+  switch (entry.type) {
+    case 'play':
+      return '出牌动作';
+    case 'challenge':
+      return '质疑判定';
+    case 'penalty':
+      return '惩罚阶段';
+    case 'reflection':
+      return '轮次反思';
+    case 'system_challenge':
+      return '系统介入';
+    case 'game_finished':
+      return '胜负揭晓';
+    default:
+      return '系统播报';
   }
-  if (entry.round) {
-    return `${baseTag} · 第 ${entry.round} 天`;
-  }
-  return baseTag;
 };
 
 const formatTime = (value) => {
@@ -331,49 +344,42 @@ const formatDate = (value) => {
   });
 };
 
-const handleRound = async () => {
-  if (!state.isJudge) return;
-  const judgeMessage = elements.judgeMessage?.value ?? '';
-  try {
-    setJudgeDisabled(true);
-    const result = await requestJSON('/api/werewolf/advance', {
-      method: 'POST',
-      body: JSON.stringify({ judgeMessage }),
-    });
-    if (elements.judgeMessage) {
-      elements.judgeMessage.value = '';
-    }
-    applyRoomPayload(result);
-    showRoundError('');
-  } catch (error) {
-    const message = error instanceof HttpError ? error.message : '推进阶段失败';
-    showRoundError(message);
-  } finally {
-    setJudgeDisabled(false);
+const formatStatus = (status) => {
+  switch ((status || '').toLowerCase()) {
+    case 'running':
+      return '进行中';
+    case 'preparing':
+      return '准备中';
+    case 'finished':
+      return '已结束';
+    case 'stopped':
+      return '已终止';
+    case 'error':
+      return '异常';
+    default:
+      return '未知';
   }
 };
 
 const handleCloseRoom = async () => {
-  if (!state.isJudge) return;
+  if (!state.isCreator) return;
   try {
-    setJudgeDisabled(true);
-    await requestJSON('/api/werewolf/room', { method: 'DELETE' });
-    applyRoomPayload(null);
+    setControlsDisabled(true);
+    await requestJSON('/api/liars-bar/game', { method: 'DELETE' });
+    applyGameSnapshot(null);
   } catch (error) {
-    const message = error instanceof HttpError ? error.message : '结束房间失败';
-    showRoundError(message);
+    const message = error instanceof HttpError ? error.message : '结束对局失败';
+    showControlError(message);
   } finally {
-    setJudgeDisabled(false);
+    setControlsDisabled(false);
   }
 };
 
-const setJudgeDisabled = (disabled) => {
-  if (elements.triggerRound) elements.triggerRound.disabled = disabled || !state.isJudge;
-  if (elements.closeRoom) elements.closeRoom.disabled = disabled || !state.isJudge;
-  if (elements.judgeMessage) elements.judgeMessage.disabled = disabled || !state.isJudge;
+const setControlsDisabled = (disabled) => {
+  if (elements.closeRoom) elements.closeRoom.disabled = disabled || !state.isCreator;
 };
 
-const showRoundError = (message) => {
+const showControlError = (message) => {
   if (!elements.roundError) return;
   if (message) {
     elements.roundError.hidden = false;
@@ -392,7 +398,7 @@ const connectSocket = () => {
   }
   state.shouldReconnect = true;
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const socket = new WebSocket(`${protocol}//${window.location.host}/ws/werewolf`);
+  const socket = new WebSocket(`${protocol}//${window.location.host}/ws/liars-bar`);
   state.socket = socket;
 
   socket.addEventListener('open', () => {
@@ -405,10 +411,8 @@ const connectSocket = () => {
   socket.addEventListener('message', (event) => {
     try {
       const data = JSON.parse(event.data);
-      if (data.type === 'room_state') {
-        applyRoomPayload({ room: data.room, history: data.history });
-      } else if (data.type === 'room_closed') {
-        applyRoomPayload(null);
+      if (data.type === 'game_state') {
+        applyGameSnapshot({ game: data.game, history: data.history });
       }
     } catch (error) {
       console.error('解析 WebSocket 消息失败', error);
@@ -428,7 +432,6 @@ const connectSocket = () => {
 };
 
 const initEvents = () => {
-  elements.triggerRound?.addEventListener('click', handleRound);
   elements.closeRoom?.addEventListener('click', handleCloseRoom);
   window.addEventListener('pagehide', () => {
     state.shouldReconnect = false;
@@ -443,7 +446,7 @@ const initEvents = () => {
 const bootstrap = async () => {
   initEvents();
   await fetchSession();
-  await fetchRoomState();
+  await fetchGameState();
   connectSocket();
 };
 

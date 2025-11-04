@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional
+from dataclasses import dataclass, field
 import datetime
 import json
 import os
+from typing import Dict, List, Optional
 
 
 def generate_game_id():
