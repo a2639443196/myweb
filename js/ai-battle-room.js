@@ -15,6 +15,7 @@ const state = {
   socket: null,
   reconnectTimer: null,
   shouldReconnect: true,
+  isStarting: false,
 };
 
 const elements = {
@@ -35,6 +36,8 @@ const elements = {
   roundError: document.querySelector('[data-role="round-error"]'),
   latestMessage: document.querySelector('[data-role="latest-message"]'),
   roomStatus: document.querySelector('[data-role="room-status"]'),
+  autoStartButton: document.querySelector('[data-role="auto-start"]'),
+  autoStartError: document.querySelector('[data-role="auto-start-error"]'),
 };
 
 const requestJSON = async (url, options = {}) => {
@@ -110,6 +113,7 @@ const updateLayout = () => {
   } else {
     clearChatArea();
     updateControls();
+    updateAutoStartControls();
   }
 };
 
@@ -284,6 +288,19 @@ const updateControls = () => {
   }
 };
 
+const updateAutoStartControls = () => {
+  if (!elements.autoStartButton) return;
+  elements.autoStartButton.disabled = state.isStarting;
+  if (state.isStarting) {
+    elements.autoStartButton.textContent = '正在开局…';
+  } else {
+    elements.autoStartButton.textContent = '立即开局';
+  }
+  if (!state.isStarting) {
+    hideAutoStartError();
+  }
+};
+
 const updateRoomStats = () => {
   const game = state.game;
   if (!game) return;
@@ -390,6 +407,46 @@ const showControlError = (message) => {
   }
 };
 
+const showAutoStartError = (message) => {
+  if (!elements.autoStartError) return;
+  if (message) {
+    elements.autoStartError.hidden = false;
+    elements.autoStartError.textContent = message;
+  } else {
+    hideAutoStartError();
+  }
+};
+
+const hideAutoStartError = () => {
+  if (!elements.autoStartError) return;
+  elements.autoStartError.hidden = true;
+  elements.autoStartError.textContent = '';
+};
+
+const ensureGameStarted = async () => {
+  if (state.isStarting) return;
+  try {
+    state.isStarting = true;
+    updateAutoStartControls();
+    const snapshot = await requestJSON('/api/liars-bar/game/auto-start', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    if (snapshot?.game) {
+      hideAutoStartError();
+      applyGameSnapshot(snapshot);
+    } else {
+      await fetchGameState();
+    }
+  } catch (error) {
+    const message = error instanceof HttpError ? error.message : '启动对局失败';
+    showAutoStartError(message);
+  } finally {
+    state.isStarting = false;
+    updateAutoStartControls();
+  }
+};
+
 const connectSocket = () => {
   if (state.socket) {
     state.shouldReconnect = false;
@@ -433,6 +490,7 @@ const connectSocket = () => {
 
 const initEvents = () => {
   elements.closeRoom?.addEventListener('click', handleCloseRoom);
+  elements.autoStartButton?.addEventListener('click', ensureGameStarted);
   window.addEventListener('pagehide', () => {
     state.shouldReconnect = false;
     if (state.reconnectTimer) {
