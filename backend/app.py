@@ -11,14 +11,6 @@ from typing import Any, Callable, Dict, Optional
 
 from flask import Flask, abort, jsonify, make_response, request, send_from_directory
 from flask_sock import Sock
-
-from backend.ai_registry import AgentRegistry
-from backend.liars_bar_manager import (
-    LiarsBarGameManager,
-    GameAlreadyRunningError,
-    GameNotFoundError,
-)
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR
 DATABASE_PATH = Path(__file__).resolve().parent / "wellness.db"
@@ -26,7 +18,6 @@ SESSION_COOKIE_NAME = "session_token"
 SESSION_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
 ONLINE_THRESHOLD_SECONDS = 60
 ONLINE_BROADCAST_INTERVAL = 10
-AI_CONFIG_PATH = Path(__file__).resolve().parent / "config" / "ai_agents.yaml"
 
 
 class OnlineUserNotifier:
@@ -101,27 +92,6 @@ class OnlineUserNotifier:
 
 
 online_user_notifier: Optional[OnlineUserNotifier] = None
-agent_registry = AgentRegistry(AI_CONFIG_PATH)
-liars_bar_manager = LiarsBarGameManager(agent_registry)
-
-DEFAULT_GAME_TITLE = "AI 骗子酒馆对决"
-DEFAULT_GAME_SCENARIO = (
-    "午夜的地下酒馆里，只剩下六名老千与一把被改造的转轮手枪。"
-    "他们轮流下注、互相欺骗，只为在黎明前活着离开。"
-)
-
-
-def _default_agent_ids(limit: int = 4) -> list[str]:
-    agents = agent_registry.list_agents()
-    agent_ids: list[str] = []
-    for entry in agents:
-        agent_id = str(entry.get("id") or "").strip()
-        if agent_id:
-            agent_ids.append(agent_id)
-        if len(agent_ids) >= limit:
-            break
-    return agent_ids
-
 
 def notify_online_users_change() -> None:
     if online_user_notifier is not None:
@@ -271,99 +241,6 @@ def create_app() -> Flask:
             delete_session(token)
 
         return response
-
-    @app.get("/api/liars-bar/agents")
-    def liars_bar_agents() -> Any:
-        snapshot = agent_registry.snapshot()
-        return jsonify(snapshot)
-
-    @app.get("/api/liars-bar/game")
-    def liars_bar_game_state() -> Any:
-        snapshot = liars_bar_manager.get_state()
-        if not snapshot.get("game"):
-            return jsonify({"error": "游戏未创建"}), 404
-        return jsonify(snapshot)
-
-    @app.post("/api/liars-bar/game/auto-start")
-    def liars_bar_game_auto_start() -> Any:
-        payload = request.get_json(silent=True) or {}
-        title = str(payload.get("title", DEFAULT_GAME_TITLE)).strip() or DEFAULT_GAME_TITLE
-        scenario = str(payload.get("scenario", DEFAULT_GAME_SCENARIO)).strip() or DEFAULT_GAME_SCENARIO
-        agent_ids_raw = payload.get("agentIds")
-
-        agent_ids: list[str] = []
-        if isinstance(agent_ids_raw, list):
-            for item in agent_ids_raw:
-                agent_id = str(item or "").strip()
-                if agent_id:
-                    agent_ids.append(agent_id)
-
-        if len(agent_ids) < 2:
-            agent_ids = _default_agent_ids()
-
-        if len(agent_ids) < 2:
-            return jsonify({"error": "缺少可用的 AI 玩家配置。"}), 500
-
-        try:
-            snapshot = liars_bar_manager.create_game(
-                creator={"id": "auto", "username": "系统主持人"},
-                title=title,
-                scenario=scenario,
-                agent_ids=agent_ids,
-            )
-        except GameAlreadyRunningError:
-            snapshot = liars_bar_manager.get_state()
-        except (ValueError, KeyError) as error:
-            return jsonify({"error": str(error)}), 400
-
-        return jsonify(snapshot)
-
-    @app.post("/api/liars-bar/game")
-    def liars_bar_game_create() -> Any:
-        account = get_current_account()
-        if not account:
-            return jsonify({"error": "未登录"}), 401
-
-        payload = request.get_json(silent=True) or {}
-        title = str(payload.get("title", "")).strip()
-        scenario = str(payload.get("scenario", "")).strip()
-        agent_ids = payload.get("agentIds")
-
-        if not isinstance(agent_ids, list) or not agent_ids:
-            return jsonify({"error": "agentIds 必须是非空数组"}), 400
-
-        try:
-            snapshot = liars_bar_manager.create_game(
-                creator=account,
-                title=title,
-                scenario=scenario,
-                agent_ids=[str(item) for item in agent_ids],
-            )
-        except GameAlreadyRunningError:
-            return jsonify({"error": "当前已有对局在进行，请稍后再试。"}), 409
-        except (ValueError, KeyError) as error:
-            return jsonify({"error": str(error)}), 400
-
-        return jsonify(snapshot)
-
-    @app.delete("/api/liars-bar/game")
-    def liars_bar_game_close() -> Any:
-        account = get_current_account()
-        if not account:
-            return jsonify({"error": "未登录"}), 401
-
-        snapshot = liars_bar_manager.get_state()
-        game = snapshot.get("game") or {}
-        creator = game.get("creator") or {}
-        if creator.get("id") and creator.get("id") != account.get("id"):
-            return jsonify({"error": "仅创建者可以结束对局。"}), 403
-
-        try:
-            liars_bar_manager.close_game()
-        except GameNotFoundError:
-            return jsonify({"error": "游戏未创建"}), 404
-
-        return jsonify({"status": "stopped"})
 
     @app.get("/api/online-users")
     def online_users() -> Any:
