@@ -24,12 +24,12 @@
       body {
         margin: 0;
         min-height: 100vh;
+        min-height: 100dvh;
         background: radial-gradient(circle at top, #082f49 0%, #020617 65%);
         color: var(--text);
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: clamp(1rem, 5vw, 3rem);
       }
 
       .app {
@@ -42,6 +42,7 @@
         display: grid;
         gap: clamp(1.2rem, 4vw, 2rem);
         box-shadow: 0 40px 60px -35px rgba(14, 165, 233, 0.55);
+        margin: clamp(1rem, 4vw, 2.5rem);
       }
 
       .nav-back {
@@ -228,6 +229,10 @@
         color: var(--success);
       }
 
+      .records-status[data-type="warning"] {
+        color: var(--warning);
+      }
+
       .records-list {
         list-style: none;
         margin: 0;
@@ -292,10 +297,6 @@
       }
 
       @media (max-width: 760px) {
-        body {
-          padding: clamp(0.8rem, 5vw, 1.2rem);
-        }
-
         .app {
           border-radius: clamp(16px, 6vw, 22px);
           padding: clamp(1.1rem, 5vw, 1.6rem);
@@ -428,6 +429,23 @@
       const personalRecordsList = document.getElementById("reactionPersonalRecords");
       const leaderboardStatus = document.getElementById("reactionLeaderboardStatus");
       const leaderboardList = document.getElementById("reactionLeaderboard");
+      const fallbackLeaderboard = [
+        {
+          username: "示例玩家A",
+          reactionTimeMs: 215,
+          updatedAt: "2024-02-10T12:00:00Z",
+        },
+        {
+          username: "示例玩家B",
+          reactionTimeMs: 242,
+          updatedAt: "2024-03-18T09:30:00Z",
+        },
+        {
+          username: "示例玩家C",
+          reactionTimeMs: 266,
+          updatedAt: "2024-04-05T08:12:00Z",
+        },
+      ];
 
       let currentUser = null;
       let waitingTimeout = null;
@@ -624,7 +642,12 @@
           }
         } catch (error) {
           console.error(error);
-          setStatus(leaderboardStatus, error.message || "获取排行榜失败", "error");
+          renderLeaderboard(fallbackLeaderboard);
+          setStatus(
+            leaderboardStatus,
+            "排行榜服务暂不可用，已显示示例数据。",
+            "warning"
+          );
         } finally {
           setListBusy(leaderboardList, false);
         }

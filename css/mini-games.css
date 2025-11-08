@@ -21,13 +21,13 @@
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   background: radial-gradient(circle at top left, var(--bg-start), var(--bg-end));
   color: var(--text);
-  display: grid;
-  place-items: center;
-  padding: clamp(1.25rem, 5vw, 4rem);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
   position: relative;
-  overflow: hidden;
   overflow-x: hidden;
 }
 
@@ -53,6 +53,7 @@ main {
   gap: clamp(1.5rem, 3vw, 2.4rem);
   box-shadow: 0 40px 60px -40px rgba(14, 165, 233, 0.6);
   z-index: 1;
+  margin: clamp(1.2rem, 5vw, 3rem);
 }
 
 .nav-back {
@@ -183,10 +184,6 @@ h1 {
 }
 
 @media (max-width: 860px) {
-  body {
-    padding: clamp(1.1rem, 4vw, 1.8rem);
-  }
-
   main {
     border-radius: clamp(20px, 5vw, 28px);
     padding: clamp(1.3rem, 5vw, 2.1rem);
@@ -207,10 +204,6 @@ h1 {
 }
 
 @media (max-width: 640px) {
-  body {
-    padding: clamp(0.85rem, 6vw, 1.5rem);
-  }
-
   main {
     border-radius: clamp(16px, 6vw, 22px);
     padding: clamp(1.1rem, 5.5vw, 1.6rem);
@@ -258,10 +251,6 @@ h1 {
 }
 
 @media (max-width: 420px) {
-  body {
-    padding: clamp(0.75rem, 7vw, 1.2rem);
-  }
-
   main {
     padding: clamp(1rem, 6vw, 1.4rem);
   }
@@ -311,12 +300,6 @@ h1 {
 }
 
 @media (max-width: 640px) {
-  body {
-    padding: 1.5rem 1.1rem 2.5rem;
-    place-items: stretch;
-    align-content: start;
-  }
-
   main {
     padding: clamp(1.3rem, 5vw, 1.8rem);
     border-radius: 20px;
