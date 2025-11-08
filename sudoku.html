@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>数独挑战 | Mini Games</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #020617;
+        --panel: rgba(15, 23, 42, 0.78);
+        --panel-solid: rgba(15, 23, 42, 0.92);
+        --surface: rgba(15, 23, 42, 0.65);
+        --text: #f8fafc;
+        --muted: #cbd5f5;
+        --accent: #38bdf8;
+        --accent-strong: #0ea5e9;
+        --danger: #f87171;
+        --success: #34d399;
+        font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui,
+          -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(circle at top, #0c4a6e 0%, #020617 70%);
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(1rem, 5vw, 3rem);
+      }
+
+      .app {
+        width: min(1100px, 100%);
+        background: var(--panel);
+        border-radius: clamp(18px, 5vw, 28px);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        backdrop-filter: blur(18px);
+        padding: clamp(1.5rem, 4vw, 2.6rem);
+        display: grid;
+        gap: clamp(1.3rem, 4vw, 2.2rem);
+        box-shadow: 0 40px 60px -35px rgba(14, 165, 233, 0.5);
+      }
+
+      .nav-back {
+        align-self: flex-start;
+        text-decoration: none;
+        color: var(--text);
+        background: rgba(56, 189, 248, 0.18);
+        border: 1px solid rgba(125, 211, 252, 0.35);
+        padding: 0.4rem 1.05rem;
+        border-radius: 999px;
+        font-weight: 600;
+        transition: transform 0.18s ease, background 0.18s ease;
+      }
+
+      .nav-back:hover,
+      .nav-back:focus-visible {
+        outline: none;
+        background: rgba(56, 189, 248, 0.3);
+        transform: translateY(-1px);
+      }
+
+      header {
+        display: grid;
+        gap: 0.55rem;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 2.8rem);
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+        max-width: 60ch;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: rgba(56, 189, 248, 0.2);
+        color: var(--accent);
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .game-panel {
+        background: var(--panel-solid);
+        border-radius: clamp(16px, 4vw, 22px);
+        padding: clamp(1.1rem, 4vw, 1.6rem);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        display: grid;
+        gap: clamp(1.1rem, 4vw, 1.6rem);
+      }
+
+      .game-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .game-meta__stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+      }
+
+      .pill {
+        background: rgba(56, 189, 248, 0.18);
+        border-radius: 999px;
+        padding: 0.45rem 1rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .pill strong {
+        font-size: 1.1rem;
+      }
+
+      .game-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      .game-controls button,
+      .difficulty-selector button {
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--text);
+        padding: 0.6rem 1.3rem;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        box-shadow: 0 20px 40px -30px rgba(14, 165, 233, 0.8);
+        transition: transform 0.18s ease, background 0.2s ease;
+      }
+
+      .difficulty-selector {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .difficulty-selector button[data-active="true"] {
+        background: var(--accent-strong);
+      }
+
+      .game-controls button:hover,
+      .game-controls button:focus-visible,
+      .difficulty-selector button:hover,
+      .difficulty-selector button:focus-visible {
+        outline: none;
+        background: var(--accent-strong);
+        transform: translateY(-1px);
+      }
+
+      .sudoku-wrapper {
+        display: grid;
+        gap: 1rem;
+        align-items: start;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 220px);
+      }
+
+      .sudoku-grid {
+        display: grid;
+        grid-template-columns: repeat(9, minmax(0, 1fr));
+        background: rgba(15, 23, 42, 0.85);
+        border-radius: clamp(14px, 3vw, 18px);
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+      }
+
+      .cell {
+        position: relative;
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: clamp(1.3rem, 4vw, 1.8rem);
+        font-weight: 600;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        color: var(--text);
+        background: rgba(30, 41, 59, 0.35);
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease;
+      }
+
+      .cell[data-fixed="true"] {
+        background: rgba(56, 189, 248, 0.18);
+        cursor: default;
+      }
+
+      .cell[data-state="selected"] {
+        background: rgba(56, 189, 248, 0.35);
+      }
+
+      .cell[data-state="error"] {
+        background: rgba(248, 113, 113, 0.25);
+        color: #fee2e2;
+      }
+
+      .cell:focus-visible {
+        outline: 3px solid rgba(56, 189, 248, 0.55);
+        outline-offset: -2px;
+      }
+
+      .sudoku-grid .cell:nth-child(3n + 1) {
+        border-left-width: 2px;
+      }
+
+      .sudoku-grid .cell:nth-child(-n + 9) {
+        border-top-width: 2px;
+      }
+
+      .sudoku-grid .cell:nth-child(9n) {
+        border-right-width: 2px;
+      }
+
+      .sudoku-grid .cell:nth-last-child(-n + 9) {
+        border-bottom-width: 2px;
+      }
+
+      .sudoku-grid .cell {
+        border-color: rgba(148, 163, 184, 0.22);
+      }
+
+      .number-pad {
+        background: rgba(15, 23, 42, 0.78);
+        border-radius: clamp(14px, 3vw, 18px);
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        padding: clamp(0.9rem, 3vw, 1.2rem);
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .number-pad__grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+
+      .number-pad button {
+        appearance: none;
+        border: none;
+        border-radius: 12px;
+        background: rgba(56, 189, 248, 0.22);
+        color: var(--text);
+        font-size: 1.1rem;
+        font-weight: 600;
+        padding: 0.75rem 0;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.18s ease;
+      }
+
+      .number-pad button:hover,
+      .number-pad button:focus-visible {
+        outline: none;
+        background: rgba(56, 189, 248, 0.35);
+        transform: translateY(-1px);
+      }
+
+      .records {
+        display: grid;
+        gap: clamp(1rem, 3vw, 1.5rem);
+      }
+
+      .record-card {
+        background: var(--surface);
+        border-radius: clamp(16px, 4vw, 20px);
+        padding: clamp(1rem, 3vw, 1.4rem);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .record-card__header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+
+      .record-card__header h2 {
+        margin: 0;
+        font-size: clamp(1.3rem, 3.6vw, 1.6rem);
+      }
+
+      .records-status {
+        margin: 0;
+        font-size: 0.95rem;
+        color: rgba(203, 213, 225, 0.78);
+      }
+
+      .records-status[data-type="error"] {
+        color: var(--danger);
+      }
+
+      .records-status[data-type="success"] {
+        color: var(--success);
+      }
+
+      .records-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.7rem;
+      }
+
+      .records-item {
+        background: rgba(56, 189, 248, 0.12);
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.8rem;
+      }
+
+      .records-rank {
+        font-weight: 700;
+        color: var(--accent);
+        font-size: 1.05rem;
+        min-width: 2ch;
+      }
+
+      .records-content {
+        display: grid;
+        gap: 0.25rem;
+        min-width: 0;
+      }
+
+      .records-content strong {
+        font-size: 1.05rem;
+      }
+
+      .records-meta {
+        font-size: 0.85rem;
+        color: rgba(148, 163, 184, 0.85);
+      }
+
+      .records-time {
+        margin-left: auto;
+        font-weight: 700;
+        font-size: 1.05rem;
+      }
+
+      .records-extra {
+        font-size: 0.85rem;
+        color: rgba(191, 219, 254, 0.85);
+        margin-left: auto;
+      }
+
+      .records-empty {
+        font-size: 0.95rem;
+        color: rgba(148, 163, 184, 0.85);
+      }
+
+      @media (max-width: 980px) {
+        .sudoku-wrapper {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .number-pad {
+          grid-template-columns: 1fr;
+          max-width: 360px;
+        }
+      }
+
+      @media (max-width: 720px) {
+        body {
+          padding: clamp(0.8rem, 5vw, 1.4rem);
+        }
+
+        .app {
+          border-radius: clamp(16px, 6vw, 24px);
+          padding: clamp(1.2rem, 5vw, 1.8rem);
+        }
+
+        .game-meta {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .game-controls {
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .game-controls button {
+          flex: 1;
+        }
+
+        .difficulty-selector {
+          width: 100%;
+        }
+
+        .difficulty-selector button {
+          flex: 1;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .sudoku-grid {
+          grid-template-columns: repeat(9, minmax(0, 1fr));
+        }
+
+        .cell {
+          font-size: clamp(1.1rem, 6vw, 1.4rem);
+        }
+
+        .number-pad__grid {
+          gap: 0.4rem;
+        }
+
+        .number-pad button {
+          padding: 0.65rem 0;
+        }
+
+        .records-item {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .records-time,
+        .records-extra {
+          margin-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <a class="nav-back" href="mini-games.html">← 返回小游戏集合</a>
+      <header>
+        <p class="badge">难度与排行同步</p>
+        <h1>数独挑战</h1>
+        <p>
+          选择难度后填满 9×9 数独棋盘，避免错误并保持高效。完成后将记录用时与犯错次数，同时同步到排行榜。
+        </p>
+      </header>
+      <section class="game-panel" aria-label="数独棋盘">
+        <div class="game-meta">
+          <div class="game-meta__stats">
+            <span class="pill">用时：<strong id="sudokuTimer">00:00</strong></span>
+            <span class="pill">错误：<strong id="sudokuMistakes">0</strong></span>
+            <span class="pill">当前难度：<strong id="sudokuDifficultyLabel">中等</strong></span>
+          </div>
+          <div class="game-controls">
+            <div class="difficulty-selector" role="radiogroup" aria-label="选择难度">
+              <button type="button" data-difficulty="easy">入门</button>
+              <button type="button" data-difficulty="medium" data-active="true">中等</button>
+              <button type="button" data-difficulty="hard">挑战</button>
+            </div>
+            <button type="button" id="sudokuRestart">重新开始</button>
+          </div>
+        </div>
+        <div class="sudoku-wrapper">
+          <div class="sudoku-grid" id="sudokuGrid" role="grid" aria-label="数独棋盘"></div>
+          <div class="number-pad" aria-label="数字输入面板">
+            <div class="number-pad__grid">
+              <button type="button" data-value="1">1</button>
+              <button type="button" data-value="2">2</button>
+              <button type="button" data-value="3">3</button>
+              <button type="button" data-value="4">4</button>
+              <button type="button" data-value="5">5</button>
+              <button type="button" data-value="6">6</button>
+              <button type="button" data-value="7">7</button>
+              <button type="button" data-value="8">8</button>
+              <button type="button" data-value="9">9</button>
+            </div>
+            <button type="button" data-action="clear">清除</button>
+          </div>
+        </div>
+      </section>
+      <section class="records" aria-label="数独成绩">
+        <article class="record-card" aria-labelledby="sudoku-personal-heading">
+          <div class="record-card__header">
+            <h2 id="sudoku-personal-heading">个人成绩</h2>
+            <p class="records-status" id="sudokuPersonalStatus" data-type="muted">
+              登录后可自动保存不同难度下的最佳成绩。
+            </p>
+          </div>
+          <ul
+            class="records-list"
+            id="sudokuPersonalRecords"
+            aria-live="polite"
+            aria-busy="true"
+          ></ul>
+        </article>
+        <article class="record-card" aria-labelledby="sudoku-leaderboard-heading">
+          <div class="record-card__header">
+            <h2 id="sudoku-leaderboard-heading">全站排行榜</h2>
+            <p class="records-status" id="sudokuLeaderboardStatus" data-type="muted">
+              正在加载排行榜…
+            </p>
+          </div>
+          <ul
+            class="records-list"
+            id="sudokuLeaderboard"
+            aria-live="polite"
+            aria-busy="true"
+          ></ul>
+        </article>
+      </section>
+    </main>
+    <script>
+      const sudokuGrid = document.getElementById("sudokuGrid");
+      const sudokuTimer = document.getElementById("sudokuTimer");
+      const sudokuMistakes = document.getElementById("sudokuMistakes");
+      const sudokuDifficultyLabel = document.getElementById("sudokuDifficultyLabel");
+      const sudokuRestart = document.getElementById("sudokuRestart");
+      const difficultyButtons = Array.from(document.querySelectorAll(".difficulty-selector button"));
+      const numberPad = document.querySelector(".number-pad");
+      const personalStatus = document.getElementById("sudokuPersonalStatus");
+      const personalRecordsList = document.getElementById("sudokuPersonalRecords");
+      const leaderboardStatus = document.getElementById("sudokuLeaderboardStatus");
+      const leaderboardList = document.getElementById("sudokuLeaderboard");
+
+      const puzzles = {
+        easy: [
+          {
+            board: "530070000600195000098000060800060003400803001700020006060000280000419005000080079",
+            solution:
+              "534678912672195348198342567859761423426853791713924856961537284287419635345286179",
+          },
+        ],
+        medium: [
+          {
+            board: "200080300060070084030500209000105408000000000402706000301007040720040060004010003",
+            solution:
+              "245981376169273584837564219976125438318469752452736891591837642723648165684912573",
+          },
+        ],
+        hard: [
+          {
+            board: "005300000800000020070010500400005300010070006003200080060500009004000030000009700",
+            solution:
+              "145327698839654127672918543428165379219873456753294681961532874584791236327489715",
+          },
+        ],
+      };
+
+      let currentUser = null;
+      let currentDifficulty = "medium";
+      let currentPuzzle = null;
+      let cells = [];
+      let selectedCell = null;
+      let mistakes = 0;
+      let startTimestamp = null;
+      let timerInterval = null;
+
+      function shuffle(array) {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      function formatTime(ms) {
+        if (!Number.isFinite(ms) || ms <= 0) {
+          return "00:00";
+        }
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+        const seconds = String(totalSeconds % 60).padStart(2, "0");
+        return `${minutes}:${seconds}`;
+      }
+
+      function formatTimePrecise(ms) {
+        if (!Number.isFinite(ms) || ms <= 0) {
+          return "--";
+        }
+        return `${(ms / 1000).toFixed(1)}s`;
+      }
+
+      function formatDateTime(value) {
+        if (!value) return "刚刚";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "刚刚";
+        return date.toLocaleString("zh-CN", {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      function setStatus(element, message, type = "muted") {
+        if (!element) return;
+        element.textContent = message;
+        element.dataset.type = type;
+      }
+
+      function setListBusy(list, busy) {
+        if (!list) return;
+        list.setAttribute("aria-busy", busy ? "true" : "false");
+      }
+
+      function renderPlaceholder(list, message) {
+        list.innerHTML = "";
+        const item = document.createElement("li");
+        item.className = "records-empty";
+        item.textContent = message;
+        list.appendChild(item);
+      }
+
+      function resetTimer() {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        startTimestamp = null;
+        sudokuTimer.textContent = "00:00";
+      }
+
+      function startTimer() {
+        startTimestamp = performance.now();
+        timerInterval = setInterval(() => {
+          const elapsed = performance.now() - startTimestamp;
+          sudokuTimer.textContent = formatTime(elapsed);
+        }, 500);
+      }
+
+      function stopTimer() {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+      }
+
+      function updateMistakes() {
+        sudokuMistakes.textContent = mistakes;
+      }
+
+      function getPuzzle(difficulty) {
+        const pool = puzzles[difficulty] || puzzles.medium;
+        return shuffle(pool)[0];
+      }
+
+      function buildGrid(puzzle) {
+        sudokuGrid.innerHTML = "";
+        cells = [];
+        for (let index = 0; index < 81; index += 1) {
+          const value = puzzle.board[index];
+          const cell = document.createElement("button");
+          cell.type = "button";
+          cell.className = "cell";
+          cell.dataset.index = index;
+          cell.dataset.row = Math.floor(index / 9);
+          cell.dataset.col = index % 9;
+          const isFixed = value !== "0";
+          if (isFixed) {
+            cell.dataset.fixed = "true";
+            cell.textContent = value;
+          } else {
+            cell.dataset.fixed = "false";
+            cell.textContent = "";
+            cell.dataset.value = "";
+          }
+          cell.addEventListener("click", () => handleCellSelect(cell));
+          cell.addEventListener("keydown", (event) => handleCellKeydown(event, cell));
+          sudokuGrid.appendChild(cell);
+          cells.push(cell);
+        }
+      }
+
+      function clearSelection() {
+        if (selectedCell) {
+          selectedCell.dataset.state = "";
+        }
+      }
+
+      function handleCellSelect(cell) {
+        if (cell.dataset.fixed === "true") {
+          selectedCell = null;
+          return;
+        }
+        clearSelection();
+        selectedCell = cell;
+        selectedCell.dataset.state = "selected";
+      }
+
+      function handleCellKeydown(event, cell) {
+        const { key } = event;
+        if (key >= "1" && key <= "9") {
+          event.preventDefault();
+          if (cell.dataset.fixed === "true") return;
+          setCellValue(cell, key);
+        } else if (key === "Backspace" || key === "Delete" || key === "0") {
+          event.preventDefault();
+          if (cell.dataset.fixed === "true") return;
+          setCellValue(cell, "");
+        }
+      }
+
+      function setCellValue(cell, value) {
+        if (!cell || cell.dataset.fixed === "true") {
+          return;
+        }
+        if (!startTimestamp) {
+          startTimer();
+        }
+        if (value === "") {
+          cell.textContent = "";
+          cell.dataset.value = "";
+          cell.dataset.state = "selected";
+          return;
+        }
+        cell.textContent = value;
+        cell.dataset.value = value;
+        const index = Number(cell.dataset.index);
+        const correctValue = currentPuzzle.solution[index];
+        if (value === correctValue) {
+          if (cell.dataset.state === "error") {
+            cell.dataset.state = "selected";
+          }
+        } else {
+          if (cell.dataset.state !== "error") {
+            mistakes += 1;
+            updateMistakes();
+          }
+          cell.dataset.state = "error";
+        }
+        checkCompletion();
+      }
+
+      function checkCompletion() {
+        const allCorrect = cells.every((cell) => {
+          const index = Number(cell.dataset.index);
+          const expected = currentPuzzle.solution[index];
+          if (cell.dataset.fixed === "true") {
+            return cell.textContent === expected;
+          }
+          const value = cell.dataset.value || cell.textContent;
+          return value === expected;
+        });
+        if (allCorrect) {
+          completeGame();
+        }
+      }
+
+      function resetBoard() {
+        mistakes = 0;
+        updateMistakes();
+        resetTimer();
+        clearSelection();
+        selectedCell = null;
+        cells.forEach((cell) => {
+          if (cell.dataset.fixed === "false") {
+            cell.textContent = "";
+            cell.dataset.value = "";
+            cell.dataset.state = "";
+          }
+        });
+      }
+
+      function startGame(difficulty = currentDifficulty) {
+        currentDifficulty = difficulty;
+        sudokuDifficultyLabel.textContent =
+          difficulty === "easy" ? "入门" : difficulty === "hard" ? "挑战" : "中等";
+        difficultyButtons.forEach((button) => {
+          button.dataset.active = button.dataset.difficulty === difficulty ? "true" : "false";
+        });
+        currentPuzzle = getPuzzle(difficulty);
+        buildGrid(currentPuzzle);
+        resetBoard();
+        setStatus(personalStatus, "填写完整后即可自动提交成绩。", "muted");
+      }
+
+      function completeGame() {
+        stopTimer();
+        const finishedAt = performance.now();
+        const elapsed = startTimestamp ? Math.max(0, finishedAt - startTimestamp) : 0;
+        setStatus(personalStatus, "🎉 数独完成，成绩已提交！", "success");
+        submitRecord({
+          difficulty: currentDifficulty,
+          elapsedMs: Math.round(elapsed),
+          mistakes,
+        });
+      }
+
+      numberPad.addEventListener("click", (event) => {
+        const target = event.target.closest("button");
+        if (!target) return;
+        if (target.dataset.action === "clear") {
+          if (selectedCell) {
+            setCellValue(selectedCell, "");
+          }
+          return;
+        }
+        const value = target.dataset.value;
+        if (selectedCell && value) {
+          setCellValue(selectedCell, value);
+        }
+      });
+
+      sudokuRestart.addEventListener("click", () => {
+        startGame(currentDifficulty);
+      });
+
+      difficultyButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          startGame(button.dataset.difficulty);
+        });
+      });
+
+      function renderPersonalRecords(records) {
+        if (!personalRecordsList) return;
+        personalRecordsList.innerHTML = "";
+        if (!records.length) {
+          renderPlaceholder(personalRecordsList, "完成一局后即可保存各难度最佳成绩。");
+          return;
+        }
+        const sorted = [...records].sort((a, b) => {
+          if (a.difficulty === b.difficulty) {
+            if (a.elapsedMs === b.elapsedMs) {
+              return a.mistakes - b.mistakes;
+            }
+            return a.elapsedMs - b.elapsedMs;
+          }
+          const order = { easy: 0, medium: 1, hard: 2 };
+          return order[a.difficulty] - order[b.difficulty];
+        });
+        sorted.forEach((record, index) => {
+          const item = document.createElement("li");
+          item.className = "records-item";
+          const rank = document.createElement("span");
+          rank.className = "records-rank";
+          rank.textContent = index + 1;
+          const content = document.createElement("div");
+          content.className = "records-content";
+          const label = document.createElement("strong");
+          const difficultyName =
+            record.difficulty === "easy" ? "入门" : record.difficulty === "hard" ? "挑战" : "中等";
+          label.textContent = `${difficultyName} · 最佳成绩`;
+          const meta = document.createElement("div");
+          meta.className = "records-meta";
+          meta.textContent = `记录于 ${formatDateTime(record.updatedAt || record.createdAt)}`;
+          const time = document.createElement("span");
+          time.className = "records-time";
+          time.textContent = formatTimePrecise(record.elapsedMs);
+          const extra = document.createElement("span");
+          extra.className = "records-extra";
+          extra.textContent = `${record.mistakes} 次错误`;
+          content.append(label, meta);
+          item.append(rank, content, time, extra);
+          personalRecordsList.append(item);
+        });
+      }
+
+      function renderLeaderboard(records) {
+        if (!leaderboardList) return;
+        leaderboardList.innerHTML = "";
+        if (!records.length) {
+          renderPlaceholder(leaderboardList, "暂时没有公开成绩，快来挑战！");
+          return;
+        }
+        records.forEach((record, index) => {
+          const item = document.createElement("li");
+          item.className = "records-item";
+          const rank = document.createElement("span");
+          rank.className = "records-rank";
+          rank.textContent = index + 1;
+          const content = document.createElement("div");
+          content.className = "records-content";
+          const name = document.createElement("strong");
+          name.textContent = `${record.username || "匿名玩家"} · ${
+            record.difficulty === "easy" ? "入门" : record.difficulty === "hard" ? "挑战" : "中等"
+          }`;
+          const meta = document.createElement("div");
+          meta.className = "records-meta";
+          meta.textContent = `更新于 ${formatDateTime(record.updatedAt || record.createdAt)}`;
+          const time = document.createElement("span");
+          time.className = "records-time";
+          time.textContent = formatTimePrecise(record.elapsedMs);
+          const extra = document.createElement("span");
+          extra.className = "records-extra";
+          extra.textContent = `${record.mistakes} 次错误`;
+          content.append(name, meta);
+          item.append(rank, content, time, extra);
+          leaderboardList.append(item);
+        });
+      }
+
+      async function fetchCurrentUser() {
+        try {
+          const response = await fetch("/api/session", { credentials: "include" });
+          if (response.status === 401) {
+            return null;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "无法获取登录状态");
+          }
+          return data.user || null;
+        } catch (error) {
+          throw new Error(error?.message || "无法连接服务器");
+        }
+      }
+
+      async function loadPersonalRecords({ silent = false } = {}) {
+        if (!personalRecordsList) return;
+        if (!currentUser) {
+          renderPlaceholder(personalRecordsList, "登录后即可同步最佳成绩。");
+          if (!silent) {
+            setStatus(personalStatus, "登录后可自动保存不同难度的成绩。", "muted");
+          }
+          return;
+        }
+        if (!silent) {
+          setStatus(personalStatus, "正在加载个人成绩…", "muted");
+        }
+        setListBusy(personalRecordsList, true);
+        try {
+          const response = await fetch("/api/sudoku/records/me", {
+            credentials: "include",
+          });
+          if (response.status === 401) {
+            currentUser = null;
+            setStatus(personalStatus, "登录后可自动保存不同难度的成绩。", "muted");
+            renderPlaceholder(personalRecordsList, "登录后即可同步最佳成绩。");
+            return;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "获取个人成绩失败");
+          }
+          const records = Array.isArray(data.records) ? data.records : [];
+          renderPersonalRecords(records);
+          if (records.length) {
+            setStatus(personalStatus, "这些是你在各难度下的最快记录。", "muted");
+          } else {
+            setStatus(personalStatus, "完成一次数独即可保存成绩。", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(personalStatus, error.message || "获取个人成绩失败", "error");
+        } finally {
+          setListBusy(personalRecordsList, false);
+        }
+      }
+
+      async function loadLeaderboard({ silent = false } = {}) {
+        if (!leaderboardList) return;
+        if (!silent) {
+          setStatus(leaderboardStatus, "正在加载排行榜…", "muted");
+        }
+        setListBusy(leaderboardList, true);
+        try {
+          const response = await fetch("/api/sudoku/leaderboard", {
+            credentials: "include",
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "获取排行榜失败");
+          }
+          const records = Array.isArray(data.records) ? data.records : [];
+          renderLeaderboard(records);
+          if (records.length) {
+            setStatus(leaderboardStatus, "展示所有玩家的最快完成时间。", "muted");
+          } else {
+            setStatus(leaderboardStatus, "暂时没有成绩，快来挑战！", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(leaderboardStatus, error.message || "获取排行榜失败", "error");
+        } finally {
+          setListBusy(leaderboardList, false);
+        }
+      }
+
+      async function submitRecord({ difficulty, elapsedMs, mistakes: mistakeCount }) {
+        try {
+          const response = await fetch("/api/sudoku/records", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ difficulty, elapsedMs, mistakes: mistakeCount }),
+          });
+          if (response.status === 401) {
+            currentUser = null;
+            setStatus(personalStatus, "登录后可保存个人成绩。", "error");
+            renderPlaceholder(personalRecordsList, "登录后即可同步最佳成绩。");
+            return;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "保存成绩失败");
+          }
+          if (data.isNewBest) {
+            setStatus(personalStatus, "🎉 刷新了新的最佳成绩！", "success");
+          } else {
+            setStatus(personalStatus, "成绩已记录。", "muted");
+          }
+          await Promise.allSettled([
+            loadPersonalRecords({ silent: true }),
+            loadLeaderboard({ silent: true }),
+          ]);
+        } catch (error) {
+          console.error(error);
+          setStatus(personalStatus, error.message || "保存成绩失败", "error");
+        }
+      }
+
+      async function initialize() {
+        try {
+          currentUser = await fetchCurrentUser();
+        } catch (error) {
+          console.error(error);
+          currentUser = null;
+          setStatus(personalStatus, error.message || "无法获取登录状态", "error");
+        }
+        startGame(currentDifficulty);
+        await Promise.allSettled([
+          loadPersonalRecords({ silent: true }),
+          loadLeaderboard(),
+        ]);
+      }
+
+      initialize();
+    </script>
+  </body>
+</html>

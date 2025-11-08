@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>反应力测试 | Mini Games</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0f172a;
+        --panel: rgba(15, 23, 42, 0.72);
+        --panel-solid: rgba(15, 23, 42, 0.92);
+        --text: #f8fafc;
+        --muted: #cbd5f5;
+        --accent: #38bdf8;
+        --accent-strong: #0ea5e9;
+        --success: #22c55e;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui,
+          -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(circle at top, #082f49 0%, #020617 65%);
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(1rem, 5vw, 3rem);
+      }
+
+      .app {
+        width: min(960px, 100%);
+        background: var(--panel);
+        border-radius: clamp(18px, 5vw, 26px);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        backdrop-filter: blur(16px);
+        padding: clamp(1.4rem, 4vw, 2.4rem);
+        display: grid;
+        gap: clamp(1.2rem, 4vw, 2rem);
+        box-shadow: 0 40px 60px -35px rgba(14, 165, 233, 0.55);
+      }
+
+      .nav-back {
+        align-self: flex-start;
+        text-decoration: none;
+        color: var(--text);
+        background: rgba(56, 189, 248, 0.18);
+        border: 1px solid rgba(125, 211, 252, 0.35);
+        padding: 0.4rem 1.05rem;
+        border-radius: 999px;
+        font-weight: 600;
+        transition: transform 0.18s ease, background 0.18s ease;
+      }
+
+      .nav-back:hover,
+      .nav-back:focus-visible {
+        outline: none;
+        background: rgba(56, 189, 248, 0.3);
+        transform: translateY(-1px);
+      }
+
+      header {
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: clamp(1.9rem, 4.5vw, 2.6rem);
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+        max-width: 60ch;
+      }
+
+      .reaction-panel {
+        background: var(--panel-solid);
+        border-radius: clamp(16px, 4vw, 20px);
+        padding: clamp(1.1rem, 4vw, 1.6rem);
+        display: grid;
+        gap: 1rem;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+      }
+
+      .reaction-pad {
+        position: relative;
+        border-radius: clamp(14px, 3vw, 18px);
+        background: rgba(56, 189, 248, 0.14);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        min-height: clamp(220px, 45vh, 320px);
+        display: grid;
+        place-items: center;
+        text-align: center;
+        cursor: pointer;
+        transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.15);
+        user-select: none;
+      }
+
+      .reaction-pad[data-state="waiting"] {
+        background: rgba(248, 113, 113, 0.15);
+        border-color: rgba(248, 113, 113, 0.45);
+      }
+
+      .reaction-pad[data-state="ready"] {
+        background: rgba(74, 222, 128, 0.2);
+        border-color: rgba(74, 222, 128, 0.55);
+        box-shadow: 0 18px 35px -25px rgba(74, 222, 128, 0.6);
+      }
+
+      .reaction-pad[data-state="cooldown"] {
+        background: rgba(148, 163, 184, 0.2);
+        border-color: rgba(148, 163, 184, 0.4);
+      }
+
+      .reaction-pad__message {
+        font-size: clamp(1.1rem, 3.2vw, 1.5rem);
+        font-weight: 600;
+      }
+
+      .reaction-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .reaction-controls button {
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--text);
+        padding: 0.6rem 1.4rem;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        box-shadow: 0 12px 30px -20px rgba(56, 189, 248, 0.8);
+        transition: transform 0.18s ease, background 0.2s ease;
+      }
+
+      .reaction-controls button:hover,
+      .reaction-controls button:focus-visible {
+        outline: none;
+        background: var(--accent-strong);
+        transform: translateY(-1px);
+      }
+
+      .reaction-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: clamp(0.9rem, 4vw, 1.4rem);
+      }
+
+      .stat-card {
+        background: rgba(15, 23, 42, 0.65);
+        border-radius: 14px;
+        padding: clamp(0.8rem, 3vw, 1.2rem);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        display: grid;
+        gap: 0.4rem;
+      }
+
+      .stat-card h2 {
+        margin: 0;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(148, 197, 255, 0.9);
+      }
+
+      .stat-card strong {
+        font-size: clamp(1.2rem, 4vw, 1.8rem);
+        font-weight: 700;
+      }
+
+      .stat-card p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: rgba(203, 213, 225, 0.85);
+        line-height: 1.5;
+      }
+
+      .records {
+        display: grid;
+        gap: clamp(1rem, 3vw, 1.4rem);
+      }
+
+      .record-card {
+        background: rgba(15, 23, 42, 0.68);
+        border-radius: 16px;
+        padding: clamp(1rem, 3vw, 1.4rem);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .record-card__header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+
+      .record-card__header h2 {
+        margin: 0;
+        font-size: clamp(1.2rem, 3.6vw, 1.6rem);
+      }
+
+      .records-status {
+        margin: 0;
+        font-size: 0.95rem;
+        color: rgba(203, 213, 225, 0.8);
+      }
+
+      .records-status[data-type="error"] {
+        color: var(--danger);
+      }
+
+      .records-status[data-type="success"] {
+        color: var(--success);
+      }
+
+      .records-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .records-item {
+        background: rgba(56, 189, 248, 0.12);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .records-rank {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--accent);
+        min-width: 2ch;
+      }
+
+      .records-content {
+        display: grid;
+        gap: 0.25rem;
+        min-width: 0;
+      }
+
+      .records-content strong {
+        font-size: 1.05rem;
+      }
+
+      .records-meta {
+        font-size: 0.85rem;
+        color: rgba(148, 163, 184, 0.8);
+      }
+
+      .records-time {
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-left: auto;
+      }
+
+      .records-empty {
+        font-size: 0.95rem;
+        color: rgba(148, 163, 184, 0.85);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: rgba(56, 189, 248, 0.18);
+        color: var(--accent);
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      @media (max-width: 760px) {
+        body {
+          padding: clamp(0.8rem, 5vw, 1.2rem);
+        }
+
+        .app {
+          border-radius: clamp(16px, 6vw, 22px);
+          padding: clamp(1.1rem, 5vw, 1.6rem);
+        }
+
+        .reaction-panel {
+          padding: clamp(0.9rem, 5vw, 1.3rem);
+        }
+
+        .reaction-pad {
+          min-height: clamp(180px, 45vh, 260px);
+        }
+
+        .reaction-controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .reaction-controls button {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .stat-card {
+          padding: clamp(0.75rem, 4vw, 1.05rem);
+        }
+
+        .records-item {
+          align-items: flex-start;
+        }
+      }
+
+      @media (max-width: 460px) {
+        .reaction-pad {
+          min-height: clamp(160px, 48vh, 220px);
+        }
+
+        .reaction-pad__message {
+          font-size: clamp(1rem, 5vw, 1.35rem);
+        }
+
+        .records-item {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .records-time {
+          margin-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <a class="nav-back" href="mini-games.html">← 返回小游戏集合</a>
+      <header>
+        <p class="badge" aria-hidden="true">毫秒级排行同步</p>
+        <h1>反应力测试</h1>
+        <p>
+          在随机倒计时后迅速点击面板，测试你的即时反应速度。每一次有效成绩都会自动加入个人战绩和全站排行榜。
+        </p>
+      </header>
+      <section class="reaction-panel" aria-label="反应力测试区域">
+        <div
+          class="reaction-pad"
+          id="reactionPad"
+          role="button"
+          tabindex="0"
+          aria-live="polite"
+          data-state="idle"
+        >
+          <span class="reaction-pad__message" id="reactionMessage">点击“开始测试”进入准备</span>
+        </div>
+        <div class="reaction-controls">
+          <button type="button" id="reactionStart">开始测试</button>
+          <span id="reactionHint">完成一轮后可再次点击开始按钮。</span>
+        </div>
+      </section>
+      <section class="reaction-stats" aria-label="当前测试数据">
+        <article class="stat-card">
+          <h2>本轮成绩</h2>
+          <strong id="reactionResult">--</strong>
+          <p>成功反应后的即时用时，以毫秒为单位。</p>
+        </article>
+        <article class="stat-card">
+          <h2>最佳成绩</h2>
+          <strong id="reactionBest">--</strong>
+          <p>登录后将自动保存个人最快纪录，并随时同步。</p>
+        </article>
+      </section>
+      <section class="records" aria-label="反应力排行榜">
+        <article class="record-card" aria-labelledby="reaction-personal-heading">
+          <div class="record-card__header">
+            <h2 id="reaction-personal-heading">个人成绩</h2>
+            <p class="records-status" id="reactionPersonalStatus" data-type="muted">
+              登录后可自动保存最快反应时间。
+            </p>
+          </div>
+          <ul
+            class="records-list"
+            id="reactionPersonalRecords"
+            aria-live="polite"
+            aria-busy="true"
+          ></ul>
+        </article>
+        <article class="record-card" aria-labelledby="reaction-leaderboard-heading">
+          <div class="record-card__header">
+            <h2 id="reaction-leaderboard-heading">全站排行榜</h2>
+            <p class="records-status" id="reactionLeaderboardStatus" data-type="muted">
+              正在加载排行榜…
+            </p>
+          </div>
+          <ul
+            class="records-list"
+            id="reactionLeaderboard"
+            aria-live="polite"
+            aria-busy="true"
+          ></ul>
+        </article>
+      </section>
+    </main>
+    <script>
+      const reactionPad = document.getElementById("reactionPad");
+      const reactionMessage = document.getElementById("reactionMessage");
+      const reactionStart = document.getElementById("reactionStart");
+      const reactionResult = document.getElementById("reactionResult");
+      const reactionBest = document.getElementById("reactionBest");
+      const reactionHint = document.getElementById("reactionHint");
+      const personalStatus = document.getElementById("reactionPersonalStatus");
+      const personalRecordsList = document.getElementById("reactionPersonalRecords");
+      const leaderboardStatus = document.getElementById("reactionLeaderboardStatus");
+      const leaderboardList = document.getElementById("reactionLeaderboard");
+
+      let currentUser = null;
+      let waitingTimeout = null;
+      let gameState = "idle";
+      let readyTimestamp = null;
+      let bestRecordMs = null;
+
+      function setPadState(state, message) {
+        gameState = state;
+        reactionPad.dataset.state = state;
+        if (message) {
+          reactionMessage.textContent = message;
+        }
+      }
+
+      function formatTime(ms) {
+        if (!Number.isFinite(ms) || ms <= 0) {
+          return "--";
+        }
+        return `${Math.round(ms)} ms`;
+      }
+
+      function formatDateTime(value) {
+        if (!value) return "刚刚";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "刚刚";
+        return date.toLocaleString("zh-CN", {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      function setStatus(element, message, type = "muted") {
+        if (!element) return;
+        element.textContent = message;
+        element.dataset.type = type;
+      }
+
+      function setListBusy(list, busy) {
+        if (!list) return;
+        list.setAttribute("aria-busy", busy ? "true" : "false");
+      }
+
+      function renderPlaceholder(list, message) {
+        list.innerHTML = "";
+        const item = document.createElement("li");
+        item.className = "records-empty";
+        item.textContent = message;
+        list.appendChild(item);
+      }
+
+      function renderPersonalRecords(records) {
+        if (!personalRecordsList) return;
+        personalRecordsList.innerHTML = "";
+        if (!records.length) {
+          renderPlaceholder(personalRecordsList, "登录后即可保存你的最佳成绩。");
+          return;
+        }
+        const sorted = [...records].sort((a, b) => a.reactionTimeMs - b.reactionTimeMs);
+        sorted.forEach((record, index) => {
+          const item = document.createElement("li");
+          item.className = "records-item";
+          const rank = document.createElement("span");
+          rank.className = "records-rank";
+          rank.textContent = index + 1;
+          const content = document.createElement("div");
+          content.className = "records-content";
+          const title = document.createElement("strong");
+          title.textContent = "最快反应";
+          const meta = document.createElement("div");
+          meta.className = "records-meta";
+          meta.textContent = `记录于 ${formatDateTime(record.updatedAt || record.createdAt)}`;
+          const time = document.createElement("span");
+          time.className = "records-time";
+          time.textContent = formatTime(record.reactionTimeMs);
+          content.append(title, meta);
+          item.append(rank, content, time);
+          personalRecordsList.append(item);
+        });
+        bestRecordMs = sorted[0]?.reactionTimeMs ?? null;
+        reactionBest.textContent = formatTime(bestRecordMs);
+      }
+
+      function renderLeaderboard(records) {
+        if (!leaderboardList) return;
+        leaderboardList.innerHTML = "";
+        if (!records.length) {
+          renderPlaceholder(leaderboardList, "暂时没有成绩，抢先登上榜首吧！");
+          return;
+        }
+        records.forEach((record, index) => {
+          const item = document.createElement("li");
+          item.className = "records-item";
+          const rank = document.createElement("span");
+          rank.className = "records-rank";
+          rank.textContent = index + 1;
+          const content = document.createElement("div");
+          content.className = "records-content";
+          const name = document.createElement("strong");
+          name.textContent = record.username || "匿名玩家";
+          const meta = document.createElement("div");
+          meta.className = "records-meta";
+          meta.textContent = `更新于 ${formatDateTime(record.updatedAt || record.createdAt)}`;
+          const time = document.createElement("span");
+          time.className = "records-time";
+          time.textContent = formatTime(record.reactionTimeMs);
+          content.append(name, meta);
+          item.append(rank, content, time);
+          leaderboardList.append(item);
+        });
+      }
+
+      async function fetchCurrentUser() {
+        try {
+          const response = await fetch("/api/session", { credentials: "include" });
+          if (response.status === 401) {
+            return null;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "无法获取登录状态");
+          }
+          return data.user || null;
+        } catch (error) {
+          throw new Error(error?.message || "无法连接服务器");
+        }
+      }
+
+      async function loadPersonalRecords({ silent = false } = {}) {
+        if (!personalRecordsList) return;
+        if (!currentUser) {
+          renderPlaceholder(personalRecordsList, "登录后即可保存你的最佳成绩。");
+          if (!silent) {
+            setStatus(personalStatus, "登录后可自动保存最快反应时间。", "muted");
+          }
+          reactionBest.textContent = formatTime(bestRecordMs);
+          return;
+        }
+        if (!silent) {
+          setStatus(personalStatus, "正在加载个人成绩…", "muted");
+        }
+        setListBusy(personalRecordsList, true);
+        try {
+          const response = await fetch("/api/reaction/records/me", {
+            credentials: "include",
+          });
+          if (response.status === 401) {
+            currentUser = null;
+            setStatus(personalStatus, "登录后可自动保存最快反应时间。", "muted");
+            renderPlaceholder(personalRecordsList, "登录后即可保存你的最佳成绩。");
+            return;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "获取个人成绩失败");
+          }
+          const records = Array.isArray(data.records) ? data.records : [];
+          renderPersonalRecords(records);
+          if (records.length) {
+            setStatus(personalStatus, "这些是你当前保存的反应成绩。", "muted");
+          } else {
+            setStatus(personalStatus, "完成一次测试即可保存成绩。", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(personalStatus, error.message || "获取个人成绩失败", "error");
+        } finally {
+          setListBusy(personalRecordsList, false);
+        }
+      }
+
+      async function loadLeaderboard({ silent = false } = {}) {
+        if (!leaderboardList) return;
+        if (!silent) {
+          setStatus(leaderboardStatus, "正在加载排行榜…", "muted");
+        }
+        setListBusy(leaderboardList, true);
+        try {
+          const response = await fetch("/api/reaction/leaderboard", {
+            credentials: "include",
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "获取排行榜失败");
+          }
+          const records = Array.isArray(data.records) ? data.records : [];
+          renderLeaderboard(records);
+          if (records.length) {
+            setStatus(leaderboardStatus, "展示所有玩家的最快反应成绩。", "muted");
+          } else {
+            setStatus(leaderboardStatus, "暂时没有成绩，快来挑战吧！", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(leaderboardStatus, error.message || "获取排行榜失败", "error");
+        } finally {
+          setListBusy(leaderboardList, false);
+        }
+      }
+
+      async function submitRecord(reactionTimeMs) {
+        try {
+          const response = await fetch("/api/reaction/records", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ reactionTimeMs }),
+          });
+          if (response.status === 401) {
+            currentUser = null;
+            setStatus(personalStatus, "登录后可保存个人成绩。", "error");
+            renderPlaceholder(personalRecordsList, "登录后即可保存你的最佳成绩。");
+            return;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "保存成绩失败");
+          }
+          if (data.isNewBest) {
+            setStatus(personalStatus, "🎉 刷新了新的最佳成绩！", "success");
+          } else {
+            setStatus(personalStatus, "成绩已记录。", "muted");
+          }
+          await Promise.allSettled([
+            loadPersonalRecords({ silent: true }),
+            loadLeaderboard({ silent: true }),
+          ]);
+        } catch (error) {
+          console.error(error);
+          setStatus(personalStatus, error.message || "保存成绩失败", "error");
+        }
+      }
+
+      function resetWaiting() {
+        if (waitingTimeout) {
+          clearTimeout(waitingTimeout);
+          waitingTimeout = null;
+        }
+        readyTimestamp = null;
+      }
+
+      function scheduleReaction() {
+        resetWaiting();
+        setPadState("waiting", "等待信号出现…请保持专注");
+        const delay = Math.floor(Math.random() * 2000) + 1500;
+        waitingTimeout = setTimeout(() => {
+          readyTimestamp = performance.now();
+          setPadState("ready", "现在点击！");
+        }, delay);
+      }
+
+      function handleStart() {
+        if (gameState === "waiting") {
+          setStatus(personalStatus, "请耐心等待信号出现。", "muted");
+          return;
+        }
+        setPadState("waiting", "等待信号出现…请保持专注");
+        reactionResult.textContent = "--";
+        reactionHint.textContent = "松开注意力也没关系，信号会随机触发。";
+        scheduleReaction();
+      }
+
+      function handleReaction(success) {
+        if (!success) {
+          resetWaiting();
+          setPadState("cooldown", "太快了！等提示变绿后再点击。");
+          reactionHint.textContent = "点击开始按钮重新尝试。";
+          return;
+        }
+        const end = performance.now();
+        const elapsed = end - readyTimestamp;
+        resetWaiting();
+        setPadState("cooldown", "点击开始按钮再来一局");
+        reactionResult.textContent = formatTime(elapsed);
+        reactionHint.textContent = "系统已记录成绩，可继续挑战。";
+        if (bestRecordMs === null || elapsed < bestRecordMs) {
+          bestRecordMs = elapsed;
+          reactionBest.textContent = formatTime(bestRecordMs);
+        }
+        submitRecord(Math.round(elapsed));
+      }
+
+      reactionStart.addEventListener("click", handleStart);
+
+      reactionPad.addEventListener("click", () => {
+        if (gameState === "ready" && readyTimestamp) {
+          handleReaction(true);
+        } else if (gameState === "waiting") {
+          handleReaction(false);
+        }
+      });
+
+      reactionPad.addEventListener("keydown", (event) => {
+        if (event.code === "Space" || event.key === "Enter") {
+          event.preventDefault();
+          if (gameState === "idle" || gameState === "cooldown") {
+            handleStart();
+          } else if (gameState === "ready") {
+            handleReaction(true);
+          } else if (gameState === "waiting") {
+            handleReaction(false);
+          }
+        }
+      });
+
+      async function initialize() {
+        try {
+          currentUser = await fetchCurrentUser();
+        } catch (error) {
+          console.error(error);
+          currentUser = null;
+          setStatus(personalStatus, error.message || "无法获取登录状态", "error");
+        }
+        await Promise.allSettled([
+          loadPersonalRecords({ silent: true }),
+          loadLeaderboard(),
+        ]);
+      }
+
+      initialize();
+    </script>
+  </body>
+</html>
