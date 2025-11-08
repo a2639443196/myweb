@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>舒尔特表格游戏</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f7fb;
+        --panel: #ffffffd9;
+        --text: #1f1f2d;
+        --accent: #3b82f6;
+        --accent-dark: #1d4ed8;
+        --danger: #ef4444;
+        font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f172a;
+          --panel: #1e293bde;
+          --text: #f8fafc;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 1.5rem;
+      }
+
+      .app {
+        max-width: 960px;
+        width: 100%;
+        background: var(--panel);
+        border-radius: 18px;
+        padding: clamp(1.25rem, 4vw, 2.25rem);
+        box-shadow: 0 20px 60px -35px rgba(15, 23, 42, 0.5);
+      }
+
+      header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: clamp(1.75rem, 4vw, 2.5rem);
+      }
+
+      header p {
+        margin: 0;
+        font-size: clamp(1rem, 2.2vw, 1.125rem);
+        line-height: 1.6;
+        opacity: 0.8;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .controls-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      label {
+        font-weight: 600;
+      }
+
+      input[type="number"] {
+        width: 5rem;
+        padding: 0.45rem 0.65rem;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        background: rgba(255, 255, 255, 0.6);
+        color: inherit;
+        font-size: 1rem;
+      }
+
+      button {
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        background: var(--accent);
+        color: white;
+        padding: 0.65rem 1.3rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+        box-shadow: 0 10px 25px -15px rgba(59, 130, 246, 0.8);
+      }
+
+      button:hover,
+      button:focus {
+        outline: none;
+        background: var(--accent-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 20px 40px -25px rgba(30, 64, 175, 0.9);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      .status {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 0.5rem;
+      }
+
+      .status span {
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .grid-wrapper {
+        background: rgba(148, 163, 184, 0.15);
+        border-radius: 16px;
+        padding: clamp(0.75rem, 2.5vw, 1.5rem);
+        margin-top: 1.5rem;
+      }
+
+      .grid {
+        display: grid;
+        gap: clamp(0.45rem, 2vw, 0.75rem);
+        transition: grid-template-columns 0.3s ease;
+      }
+
+      .cell {
+        position: relative;
+        padding: 0;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        font-size: clamp(1.4rem, 5vw, 2.5rem);
+        border-radius: 14px;
+        border: none;
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--text);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 30px -20px rgba(15, 23, 42, 0.8);
+        cursor: pointer;
+        transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .cell-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        pointer-events: none;
+      }
+
+      .cell:focus-visible {
+        outline: 3px solid rgba(59, 130, 246, 0.4);
+        outline-offset: 3px;
+      }
+
+      .cell:active {
+        transform: scale(0.97);
+      }
+
+      .cell.found {
+        background: rgba(59, 130, 246, 0.12);
+        color: var(--accent-dark);
+        box-shadow: none;
+      }
+
+      .cell.miss {
+        animation: shake 0.4s ease;
+        background: rgba(239, 68, 68, 0.15);
+      }
+
+      @supports not (aspect-ratio: 1) {
+        .cell {
+          padding: 0;
+          display: block;
+        }
+
+        .cell::before {
+          content: "";
+          display: block;
+          padding-top: 100%;
+        }
+
+        .cell-label {
+          position: absolute;
+          inset: 0;
+        }
+      }
+
+      @keyframes shake {
+        10%,
+        90% {
+          transform: translate3d(-1px, 0, 0);
+        }
+
+        20%,
+        80% {
+          transform: translate3d(2px, 0, 0);
+        }
+
+        30%,
+        50%,
+        70% {
+          transform: translate3d(-4px, 0, 0);
+        }
+
+        40%,
+        60% {
+          transform: translate3d(4px, 0, 0);
+        }
+      }
+
+      footer {
+        margin-top: 1.5rem;
+        font-size: 0.9rem;
+        opacity: 0.7;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 600px) {
+        .controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .controls-group {
+          justify-content: space-between;
+        }
+
+        button {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>舒尔特表格训练</h1>
+        <p>
+          舒尔特表格是一种提升注意力、反应速度和眼睛灵活性的训练方法。请选择合适的表格大小，依次点击从 1 到
+          N 的数字，并尽量在最短时间内完成。
+        </p>
+      </header>
+      <section class="controls" aria-label="游戏设置">
+        <div class="controls-group">
+          <label for="gridSize">表格大小</label>
+          <input
+            id="gridSize"
+            type="number"
+            min="3"
+            max="9"
+            value="5"
+            inputmode="numeric"
+            aria-describedby="size-hint"
+          />
+          <span id="size-hint">请输入 3 至 9 之间的整数</span>
+        </div>
+        <button type="button" id="startButton">开始新游戏</button>
+      </section>
+      <div class="status" aria-live="polite">
+        <span>目标数字：<strong id="targetNumber">1</strong></span>
+        <span>用时：<strong id="timer">00:00.0</strong></span>
+      </div>
+      <div class="grid-wrapper">
+        <div class="grid" id="grid" role="grid" aria-label="舒尔特表格"></div>
+      </div>
+      <footer>
+        小贴士：表格越大难度越高，建议从小尺寸开始逐步提升。若要重新开始，请调整尺寸或点击“开始新游戏”。
+      </footer>
+    </main>
+    <script>
+      const grid = document.getElementById("grid");
+      const gridSizeInput = document.getElementById("gridSize");
+      const startButton = document.getElementById("startButton");
+      const targetNumber = document.getElementById("targetNumber");
+      const timerDisplay = document.getElementById("timer");
+
+      let nextNumber = 1;
+      let totalCount = 25;
+      let timerId = null;
+      let startTimestamp = null;
+
+      function clampSize(size) {
+        if (Number.isNaN(size)) return 5;
+        return Math.min(Math.max(size, 3), 9);
+      }
+
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function formatTime(elapsedMs) {
+        const minutes = Math.floor(elapsedMs / 60000)
+          .toString()
+          .padStart(2, "0");
+        const seconds = Math.floor((elapsedMs % 60000) / 1000)
+          .toString()
+          .padStart(2, "0");
+        const tenths = Math.floor((elapsedMs % 1000) / 100);
+        return `${minutes}:${seconds}.${tenths}`;
+      }
+
+      function stopTimer() {
+        if (timerId) {
+          cancelAnimationFrame(timerId);
+          timerId = null;
+        }
+      }
+
+      function updateTimer() {
+        if (!startTimestamp) return;
+        const now = performance.now();
+        timerDisplay.textContent = formatTime(now - startTimestamp);
+        timerId = requestAnimationFrame(updateTimer);
+      }
+
+      function startTimer() {
+        stopTimer();
+        startTimestamp = performance.now();
+        updateTimer();
+      }
+
+      function endGame() {
+        stopTimer();
+        targetNumber.textContent = "完成!";
+      }
+
+      function handleCellClick(event) {
+        const button = event.currentTarget;
+        const value = Number(button.dataset.value);
+        if (value === nextNumber) {
+          if (nextNumber === 1) {
+            startTimer();
+          }
+          button.classList.add("found");
+          button.disabled = true;
+          nextNumber += 1;
+          if (nextNumber > totalCount) {
+            endGame();
+          } else {
+            targetNumber.textContent = nextNumber;
+          }
+        } else {
+          button.classList.add("miss");
+          setTimeout(() => button.classList.remove("miss"), 400);
+        }
+      }
+
+      function createGrid(size) {
+        const clampedSize = clampSize(size);
+        gridSizeInput.value = clampedSize;
+        grid.style.gridTemplateColumns = `repeat(${clampedSize}, minmax(0, 1fr))`;
+        const numbers = shuffle(
+          Array.from({ length: clampedSize * clampedSize }, (_, idx) => idx + 1)
+        );
+        totalCount = clampedSize * clampedSize;
+        nextNumber = 1;
+        targetNumber.textContent = nextNumber;
+        grid.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        numbers.forEach((value) => {
+          const cellButton = document.createElement("button");
+          cellButton.type = "button";
+          cellButton.className = "cell";
+          cellButton.dataset.value = value;
+          cellButton.setAttribute("role", "gridcell");
+
+          const label = document.createElement("span");
+          label.className = "cell-label";
+          label.textContent = value;
+          cellButton.appendChild(label);
+
+          cellButton.addEventListener("click", handleCellClick);
+          fragment.appendChild(cellButton);
+        });
+        grid.appendChild(fragment);
+        timerDisplay.textContent = "00:00.0";
+        stopTimer();
+        startTimestamp = null;
+      }
+
+      startButton.addEventListener("click", () => {
+        const desiredSize = parseInt(gridSizeInput.value, 10);
+        createGrid(desiredSize);
+      });
+
+      gridSizeInput.addEventListener("change", (event) => {
+        const desiredSize = parseInt(event.target.value, 10);
+        createGrid(desiredSize);
+      });
+
+      // 初始化表格
+      createGrid(parseInt(gridSizeInput.value, 10));
+    </script>
+  </body>
+</html>
