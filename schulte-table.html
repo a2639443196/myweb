@@ -187,6 +187,132 @@
         background: rgba(239, 68, 68, 0.15);
       }
 
+      .records {
+        margin-top: clamp(1.5rem, 4vw, 2.25rem);
+        display: grid;
+        gap: clamp(1rem, 3vw, 1.5rem);
+      }
+
+      .record-card {
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 16px;
+        padding: clamp(1rem, 3vw, 1.5rem);
+        box-shadow: inset 0 1px 0 0 rgba(148, 163, 184, 0.18);
+        backdrop-filter: blur(6px);
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .dark .record-card {
+        background: rgba(30, 41, 59, 0.65);
+        box-shadow: inset 0 1px 0 0 rgba(148, 163, 184, 0.1);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .record-card {
+          background: rgba(30, 41, 59, 0.65);
+          box-shadow: inset 0 1px 0 0 rgba(148, 163, 184, 0.1);
+        }
+      }
+
+      .record-card h2 {
+        margin: 0;
+        font-size: clamp(1.25rem, 3.2vw, 1.5rem);
+      }
+
+      .record-card__header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+
+      .records-status {
+        margin: 0;
+        font-size: 0.95rem;
+        opacity: 0.9;
+      }
+
+      .records-status[data-type="muted"] {
+        opacity: 0.7;
+      }
+
+      .records-status[data-type="error"] {
+        color: var(--danger);
+      }
+
+      .records-status[data-type="success"] {
+        color: #047857;
+      }
+
+      .records-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .records-item {
+        background: rgba(148, 163, 184, 0.15);
+        border-radius: 12px;
+        padding: 0.75rem 0.9rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+
+      .records-item strong {
+        font-size: clamp(1.1rem, 3vw, 1.3rem);
+      }
+
+      .records-time {
+        font-weight: 700;
+        font-size: clamp(1.05rem, 3vw, 1.3rem);
+      }
+
+      .records-meta {
+        font-size: 0.85rem;
+        opacity: 0.75;
+      }
+
+      .records-item--leaderboard {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .records-rank {
+        font-weight: 700;
+        font-size: clamp(1rem, 4vw, 1.25rem);
+        color: var(--accent);
+      }
+
+      .records-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        flex: 1;
+      }
+
+      .records-item--leaderboard .records-time {
+        margin-left: auto;
+      }
+
+      .records-empty {
+        font-size: 0.95rem;
+        opacity: 0.7;
+      }
+
+      @media (min-width: 900px) {
+        .records {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
       @keyframes shake {
         10%,
         90% {
@@ -266,6 +392,36 @@
       <div class="grid-wrapper">
         <div class="grid" id="grid" role="grid" aria-label="舒尔特表格"></div>
       </div>
+      <section class="records" aria-label="舒尔特成绩统计">
+        <article class="record-card" aria-labelledby="personal-heading">
+          <div class="record-card__header">
+            <h2 id="personal-heading">个人成绩</h2>
+            <p class="records-status" id="personalStatus" data-type="muted">
+              登录后可自动保存最佳成绩。
+            </p>
+          </div>
+          <ul
+            class="records-list"
+            id="personalRecords"
+            aria-live="polite"
+            aria-busy="true"
+          ></ul>
+        </article>
+        <article class="record-card" aria-labelledby="leaderboard-heading">
+          <div class="record-card__header">
+            <h2 id="leaderboard-heading">排行榜</h2>
+            <p class="records-status" id="leaderboardStatus" data-type="muted">
+              加载中…
+            </p>
+          </div>
+          <ul
+            class="records-list"
+            id="leaderboardRecords"
+            aria-live="polite"
+            aria-busy="true"
+          ></ul>
+        </article>
+      </section>
       <footer>
         小贴士：表格越大难度越高，建议从小尺寸开始逐步提升。若要重新开始，请调整尺寸或点击“开始新游戏”。
       </footer>
@@ -276,11 +432,17 @@
       const startButton = document.getElementById("startButton");
       const targetNumber = document.getElementById("targetNumber");
       const timerDisplay = document.getElementById("timer");
+      const personalRecordsList = document.getElementById("personalRecords");
+      const personalStatus = document.getElementById("personalStatus");
+      const leaderboardRecordsList = document.getElementById("leaderboardRecords");
+      const leaderboardStatus = document.getElementById("leaderboardStatus");
 
       let nextNumber = 1;
       let totalCount = 25;
       let timerId = null;
       let startTimestamp = null;
+      let currentGridSize = 5;
+      let currentUser = null;
 
       function clampSize(size) {
         if (Number.isNaN(size)) return 5;
@@ -306,6 +468,22 @@
         return `${minutes}:${seconds}.${tenths}`;
       }
 
+      function formatDateTime(isoString) {
+        if (!isoString) return "刚刚";
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) {
+          return isoString;
+        }
+        return date.toLocaleString("zh-CN", {
+          hour12: false,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
       function stopTimer() {
         if (timerId) {
           cancelAnimationFrame(timerId);
@@ -326,9 +504,235 @@
         updateTimer();
       }
 
-      function endGame() {
+      function setStatus(element, message, type = "muted") {
+        if (!element) return;
+        element.textContent = message;
+        element.dataset.type = type;
+      }
+
+      function setListBusy(list, isBusy) {
+        if (!list) return;
+        list.setAttribute("aria-busy", isBusy ? "true" : "false");
+      }
+
+      function renderPlaceholder(list, message) {
+        if (!list) return;
+        list.innerHTML = "";
+        const empty = document.createElement("li");
+        empty.className = "records-empty";
+        empty.textContent = message;
+        list.append(empty);
+      }
+
+      function renderPersonalRecords(records) {
+        if (!personalRecordsList) return;
+        personalRecordsList.innerHTML = "";
+        if (!records.length) {
+          renderPlaceholder(
+            personalRecordsList,
+            currentUser
+              ? "暂无成绩，完成一局后会自动保存最佳成绩。"
+              : "登录后即可保存成绩。"
+          );
+          return;
+        }
+
+        const sorted = [...records].sort((a, b) => a.gridSize - b.gridSize);
+        sorted.forEach((record) => {
+          const item = document.createElement("li");
+          item.className = "records-item";
+          const elapsed = Number(record.elapsedMs) || 0;
+          const bestTime = document.createElement("strong");
+          bestTime.className = "records-time";
+          bestTime.textContent = formatTime(elapsed);
+          const meta = document.createElement("div");
+          meta.className = "records-meta";
+          const updatedText = formatDateTime(record.updatedAt || record.createdAt);
+          meta.textContent = `${record.gridSize} × ${record.gridSize} 表格 · 更新于 ${updatedText}`;
+          item.append(bestTime, meta);
+          personalRecordsList.append(item);
+        });
+      }
+
+      function renderLeaderboard(records) {
+        if (!leaderboardRecordsList) return;
+        leaderboardRecordsList.innerHTML = "";
+        if (!records.length) {
+          renderPlaceholder(leaderboardRecordsList, "暂无成绩，成为第一位挑战者吧。");
+          return;
+        }
+
+        records.forEach((record, index) => {
+          const item = document.createElement("li");
+          item.className = "records-item records-item--leaderboard";
+          const rank = document.createElement("span");
+          rank.className = "records-rank";
+          rank.textContent = index + 1;
+          const content = document.createElement("div");
+          content.className = "records-content";
+          const name = document.createElement("strong");
+          name.textContent = record.username || "匿名用户";
+          const meta = document.createElement("div");
+          meta.className = "records-meta";
+          const updatedText = formatDateTime(record.updatedAt || record.createdAt);
+          meta.textContent = `${record.gridSize} × ${record.gridSize} 表格 · 更新于 ${updatedText}`;
+          content.append(name, meta);
+          const time = document.createElement("span");
+          time.className = "records-time";
+          const elapsed = Number(record.elapsedMs) || 0;
+          time.textContent = formatTime(elapsed);
+          item.append(rank, content, time);
+          leaderboardRecordsList.append(item);
+        });
+      }
+
+      async function fetchCurrentUser() {
+        try {
+          const response = await fetch("/api/session", {
+            credentials: "include",
+          });
+          if (response.status === 401) {
+            return null;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "无法获取登录状态");
+          }
+          return data.user || null;
+        } catch (error) {
+          throw new Error(error?.message || "无法连接服务器");
+        }
+      }
+
+      async function loadPersonalRecords({ silent = false } = {}) {
+        if (!personalRecordsList) return;
+
+        if (!currentUser) {
+          if (!personalStatus || personalStatus.dataset.type !== "error") {
+            setStatus(personalStatus, "登录后可自动保存最佳成绩。", "muted");
+          }
+          renderPlaceholder(personalRecordsList, "登录后即可保存成绩。");
+          setListBusy(personalRecordsList, false);
+          return;
+        }
+
+        if (!silent) {
+          setStatus(personalStatus, "正在加载个人成绩…", "muted");
+        }
+        setListBusy(personalRecordsList, true);
+
+        try {
+          const response = await fetch("/api/schulte/records/me", {
+            credentials: "include",
+          });
+          if (response.status === 401) {
+            currentUser = null;
+            setStatus(personalStatus, "登录后可自动保存最佳成绩。", "muted");
+            renderPlaceholder(personalRecordsList, "登录后即可保存成绩。");
+            return;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "获取个人成绩失败");
+          }
+          const records = Array.isArray(data.records) ? data.records : [];
+          renderPersonalRecords(records);
+          if (records.length) {
+            setStatus(personalStatus, "这些是你在不同表格大小下的最佳记录。", "muted");
+          } else {
+            setStatus(personalStatus, "完成一局后会自动保存最佳成绩。", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(personalStatus, error.message || "获取个人成绩失败", "error");
+        } finally {
+          setListBusy(personalRecordsList, false);
+        }
+      }
+
+      async function loadLeaderboard({ silent = false } = {}) {
+        if (!leaderboardRecordsList) return;
+        if (!silent) {
+          setStatus(leaderboardStatus, "加载中…", "muted");
+        }
+        setListBusy(leaderboardRecordsList, true);
+
+        try {
+          const response = await fetch("/api/schulte/leaderboard", {
+            credentials: "include",
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "获取排行榜失败");
+          }
+          const records = Array.isArray(data.records) ? data.records : [];
+          renderLeaderboard(records);
+          if (records.length) {
+            setStatus(leaderboardStatus, "展示所有用户的最快记录。", "muted");
+          } else {
+            setStatus(leaderboardStatus, "暂时没有成绩，快来挑战吧！", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(leaderboardStatus, error.message || "获取排行榜失败", "error");
+        } finally {
+          setListBusy(leaderboardRecordsList, false);
+        }
+      }
+
+      async function submitRecord(gridSize, elapsedMs) {
+        try {
+          const response = await fetch("/api/schulte/records", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ gridSize, elapsedMs }),
+          });
+
+          if (response.status === 401) {
+            currentUser = null;
+            setStatus(personalStatus, "登录后可保存个人成绩。", "error");
+            renderPlaceholder(personalRecordsList, "登录后即可保存成绩。");
+            setListBusy(personalRecordsList, false);
+            return;
+          }
+
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "保存成绩失败");
+          }
+
+          if (data.isNewBest) {
+            setStatus(personalStatus, "🎉 刷新了新的最佳成绩！", "success");
+            await Promise.all([
+              loadPersonalRecords({ silent: true }),
+              loadLeaderboard({ silent: true }),
+            ]);
+          } else {
+            setStatus(personalStatus, "完成挑战，但未刷新最佳成绩。", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(personalStatus, error.message || "保存成绩失败", "error");
+          setListBusy(personalRecordsList, false);
+        }
+      }
+
+      function completeGame() {
+        if (!startTimestamp) {
+          return;
+        }
+        const finishedAt = performance.now();
+        const elapsedMs = Math.max(0, Math.round(finishedAt - startTimestamp));
         stopTimer();
+        timerDisplay.textContent = formatTime(elapsedMs);
         targetNumber.textContent = "完成!";
+        startTimestamp = null;
+        if (elapsedMs > 0) {
+          submitRecord(currentGridSize, elapsedMs);
+        }
       }
 
       function handleCellClick(event) {
@@ -342,7 +746,7 @@
           button.disabled = true;
           nextNumber += 1;
           if (nextNumber > totalCount) {
-            endGame();
+            completeGame();
           } else {
             targetNumber.textContent = nextNumber;
           }
@@ -354,6 +758,7 @@
 
       function createGrid(size) {
         const clampedSize = clampSize(size);
+        currentGridSize = clampedSize;
         gridSizeInput.value = clampedSize;
         grid.style.gridTemplateColumns = `repeat(${clampedSize}, minmax(0, 1fr))`;
         const numbers = shuffle(
@@ -380,6 +785,20 @@
         startTimestamp = null;
       }
 
+      async function initializeRecords() {
+        try {
+          currentUser = await fetchCurrentUser();
+        } catch (error) {
+          console.error(error);
+          currentUser = null;
+          setStatus(personalStatus, error.message || "无法获取登录状态", "error");
+        }
+        await Promise.allSettled([
+          loadPersonalRecords({ silent: true }),
+          loadLeaderboard(),
+        ]);
+      }
+
       startButton.addEventListener("click", () => {
         const desiredSize = parseInt(gridSizeInput.value, 10);
         createGrid(desiredSize);
@@ -390,8 +809,8 @@
         createGrid(desiredSize);
       });
 
-      // 初始化表格
       createGrid(parseInt(gridSizeInput.value, 10));
+      initializeRecords();
     </script>
   </body>
 </html>
