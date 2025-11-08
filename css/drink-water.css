@@ -27,6 +27,7 @@ body {
   font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 .container {
@@ -412,5 +413,123 @@ footer {
 
   .cup-visual {
     height: 280px;
+  }
+}
+
+@media (max-width: 720px) {
+  .container {
+    padding: 16px 12px 32px;
+    gap: 16px;
+  }
+
+  header {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  header .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  header .nav-link {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .big-cup {
+    gap: 12px;
+  }
+
+  .cup-visual {
+    height: 240px;
+  }
+
+  .progress {
+    font-size: 26px;
+  }
+
+  .small-cups {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 10px;
+  }
+
+  .sCup {
+    padding: 8px 8px 10px;
+    border-radius: 12px;
+  }
+
+  .sCup-visual {
+    width: 36px;
+    height: 48px;
+  }
+
+  .calendar .grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 14px 10px 28px;
+    gap: 14px;
+  }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  header .header-actions {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .cup-visual {
+    height: 210px;
+  }
+
+  .progress {
+    font-size: 22px;
+  }
+
+  .progress small {
+    font-size: 13px;
+  }
+
+  .metrics {
+    gap: 6px;
+  }
+
+  .small-cups {
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  }
+
+  .nav button,
+  .nav .btn {
+    flex: 1;
+  }
+
+  .nav {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .weekday div {
+    font-size: 11px;
+  }
+
+  .grid .day {
+    padding: 6px 4px;
   }
 }

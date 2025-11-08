@@ -23,6 +23,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  overflow-x: hidden;
 }
 
 .hero {
@@ -548,6 +549,65 @@ footer {
 
   footer {
     padding-inline: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding-block: 2rem 0.75rem;
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+  }
+
+  .hero p {
+    font-size: 0.95rem;
+  }
+
+  main {
+    padding-block: 1.4rem 3rem;
+    padding-inline: 1rem;
+  }
+
+  .user-profile,
+  .online-users {
+    margin-inline: 1rem;
+    border-radius: 18px;
+    padding: 1.2rem;
+  }
+
+  .user-profile__logout {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nav-grid {
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .nav-card {
+    padding: 1.1rem;
+    border-radius: 18px;
+    gap: 1rem;
+  }
+
+  .nav-card__title {
+    font-size: 1.15rem;
+  }
+
+  .nav-card__desc {
+    font-size: 0.9rem;
+  }
+
+  .nav-card__footer {
+    font-size: 0.95rem;
+  }
+
+  footer {
+    padding-inline: 1rem;
+    padding-block: 1.5rem 2.5rem;
   }
 }
 
