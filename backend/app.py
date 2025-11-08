@@ -301,6 +301,82 @@ def create_app() -> Flask:
 
         return jsonify({"activities": [serialize_activity(item) for item in activities]})
 
+    @app.get("/api/schulte/records/me")
+    def get_my_schulte_records() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        try:
+            records = list_schulte_records_by_account(account_id=account["id"])
+        except sqlite3.Error as error:
+            return jsonify({"error": "获取个人成绩失败", "details": str(error)}), 500
+
+        return jsonify({
+            "records": [serialize_schulte_record(item) for item in records]
+        })
+
+    @app.get("/api/schulte/leaderboard")
+    def schulte_leaderboard() -> Any:
+        try:
+            records = list_schulte_leaderboard()
+        except sqlite3.Error as error:
+            return jsonify({"error": "获取排行榜失败", "details": str(error)}), 500
+
+        return jsonify({
+            "records": [serialize_schulte_record(item, include_username=True) for item in records]
+        })
+
+    @app.post("/api/schulte/records")
+    def submit_schulte_record() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        payload = request.get_json(silent=True) or {}
+        grid_size = payload.get("gridSize")
+        elapsed_ms = payload.get("elapsedMs")
+
+        try:
+            grid_size_int = int(grid_size)
+            elapsed_ms_int = int(elapsed_ms)
+        except (TypeError, ValueError):
+            return jsonify({"error": "成绩数据格式不正确。"}), 400
+
+        if not (3 <= grid_size_int <= 9):
+            return jsonify({"error": "表格大小需在 3 到 9 之间。"}), 400
+
+        if elapsed_ms_int <= 0:
+            return jsonify({"error": "用时必须大于 0。"}), 400
+
+        try:
+            record, improved = upsert_schulte_record(
+                account_id=account["id"],
+                grid_size=grid_size_int,
+                elapsed_ms=elapsed_ms_int,
+            )
+        except sqlite3.Error as error:
+            return jsonify({"error": "保存成绩失败", "details": str(error)}), 500
+
+        if improved:
+            try:
+                create_activity(
+                    account_id=account["id"],
+                    category="schulte",
+                    action="best_record",
+                    details={
+                        "gridSize": grid_size_int,
+                        "elapsedMs": elapsed_ms_int,
+                    },
+                )
+            except sqlite3.Error:
+                pass
+
+        return jsonify({
+            "record": serialize_schulte_record(record),
+            "isNewBest": improved,
+        })
+
     @sock.route("/ws/liars-bar")
     def liars_bar_socket(ws: Any) -> None:
         liars_bar_manager.register_socket(ws)
@@ -411,6 +487,23 @@ def init_db(database_path: Path) -> None:
         )
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_activities_account_created ON activities(account_id, created_at)"
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS schulte_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL,
+                grid_size INTEGER NOT NULL,
+                elapsed_ms INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(account_id, grid_size),
+                FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+            )
+            """
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_schulte_records_elapsed ON schulte_records(elapsed_ms)"
         )
         connection.commit()
 
@@ -645,6 +738,135 @@ def serialize_activity(activity: Dict[str, Any]) -> Dict[str, Any]:
         "details": activity.get("details", {}),
         "createdAt": activity.get("created_at"),
     }
+
+
+def serialize_schulte_record(
+    record: Dict[str, Any], *, include_username: bool = False
+) -> Dict[str, Any]:
+    payload = {
+        "id": record.get("id"),
+        "gridSize": record.get("grid_size"),
+        "elapsedMs": record.get("elapsed_ms"),
+        "createdAt": record.get("created_at"),
+        "updatedAt": record.get("updated_at"),
+    }
+    if include_username and record.get("username"):
+        payload["username"] = record["username"]
+    return payload
+
+
+def upsert_schulte_record(
+    *, account_id: int, grid_size: int, elapsed_ms: int
+) -> tuple[Dict[str, Any], bool]:
+    now = datetime.now(timezone.utc).isoformat()
+    with get_db_connection() as connection:
+        existing = connection.execute(
+            """
+            SELECT id, elapsed_ms
+            FROM schulte_records
+            WHERE account_id = ? AND grid_size = ?
+            """,
+            (account_id, grid_size),
+        ).fetchone()
+
+        improved = False
+        record_id: Optional[int]
+
+        if existing:
+            if int(existing["elapsed_ms"]) > elapsed_ms:
+                connection.execute(
+                    """
+                    UPDATE schulte_records
+                    SET elapsed_ms = ?, updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (elapsed_ms, now, existing["id"]),
+                )
+                connection.commit()
+                improved = True
+            record_id = int(existing["id"])
+        else:
+            cursor = connection.execute(
+                """
+                INSERT INTO schulte_records (
+                    account_id, grid_size, elapsed_ms, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (account_id, grid_size, elapsed_ms, now, now),
+            )
+            connection.commit()
+            record_id = cursor.lastrowid
+            improved = True
+
+        row = connection.execute(
+            """
+            SELECT id, account_id, grid_size, elapsed_ms, created_at, updated_at
+            FROM schulte_records
+            WHERE id = ?
+            """,
+            (record_id,),
+        ).fetchone()
+
+    if not row:
+        raise sqlite3.Error("未能保存舒尔特成绩")
+
+    return dict(row), improved
+
+
+def list_schulte_records_by_account(*, account_id: int) -> list[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, account_id, grid_size, elapsed_ms, created_at, updated_at
+            FROM schulte_records
+            WHERE account_id = ?
+            ORDER BY grid_size ASC
+            """,
+            (account_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def list_schulte_leaderboard(limit: int = 20) -> list[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT
+                sr.id,
+                sr.account_id,
+                sr.grid_size,
+                sr.elapsed_ms,
+                sr.created_at,
+                sr.updated_at,
+                a.username
+            FROM schulte_records sr
+            JOIN accounts a ON sr.account_id = a.id
+            ORDER BY sr.elapsed_ms ASC, sr.updated_at ASC
+            """,
+        ).fetchall()
+
+    best_by_account: Dict[int, Dict[str, Any]] = {}
+    for row in rows:
+        account_id = int(row["account_id"])
+        existing = best_by_account.get(account_id)
+        if existing is None:
+            best_by_account[account_id] = dict(row)
+            continue
+        if int(row["elapsed_ms"]) < int(existing["elapsed_ms"]):
+            best_by_account[account_id] = dict(row)
+        elif (
+            int(row["elapsed_ms"]) == int(existing["elapsed_ms"])
+            and str(row["updated_at"]) < str(existing["updated_at"])
+        ):
+            best_by_account[account_id] = dict(row)
+
+    best = sorted(
+        best_by_account.values(),
+        key=lambda item: (int(item["elapsed_ms"]), str(item["updated_at"]))
+    )
+
+    return best[:limit]
 
 
 def get_current_account() -> Optional[Dict[str, Any]]:
