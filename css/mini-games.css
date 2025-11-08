@@ -31,7 +31,9 @@ body {
   color: var(--text-main);
   padding: clamp(1rem, 5vw, 2rem);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 body::before {
@@ -191,7 +193,9 @@ body::before {
 
 @media (max-width: 520px) {
   body {
+    justify-content: flex-start;
     padding: clamp(0.8rem, 6vw, 1.2rem);
+    padding-bottom: calc(clamp(0.8rem, 6vw, 1.2rem) + env(safe-area-inset-bottom));
   }
 
   .games-shell {
