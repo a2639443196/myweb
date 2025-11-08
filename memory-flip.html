@@ -4,123 +4,48 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>记忆翻牌 | Mini Games</title>
+    <link rel="stylesheet" href="css/mobile-game-shell.css" />
     <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #111827;
-        --panel: rgba(17, 24, 39, 0.76);
-        --panel-strong: rgba(17, 24, 39, 0.92);
-        --surface: rgba(30, 41, 59, 0.7);
-        --text: #f8fafc;
-        --muted: #cbd5f5;
-        --accent: #f472b6;
-        --accent-strong: #ec4899;
-        --success: #22c55e;
-        --danger: #ef4444;
-        --warning: #facc15;
-        font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui,
-          -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      body.theme-rose {
+        --surface: rgba(17, 24, 39, 0.76);
+        --surface-strong: rgba(17, 24, 39, 0.92);
       }
 
-      body {
-        margin: 0;
-        min-height: 100vh;
-        min-height: 100dvh;
-        background: radial-gradient(circle at top, #312e81 0%, #111827 60%);
-        color: var(--text);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .app-shell {
+        gap: clamp(1rem, 4vw, 1.6rem);
       }
 
-      .app {
-        width: min(1000px, 100%);
-        background: var(--panel);
-        border-radius: clamp(18px, 5vw, 28px);
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        backdrop-filter: blur(18px);
-        padding: clamp(1.5rem, 4vw, 2.5rem);
-        display: grid;
-        gap: clamp(1.3rem, 4vw, 2.2rem);
-        box-shadow: 0 40px 60px -35px rgba(236, 72, 153, 0.35);
-        margin: clamp(1rem, 4vw, 2.5rem);
+      header.page-header {
+        gap: 0.5rem;
       }
 
-      .nav-back {
-        align-self: flex-start;
-        text-decoration: none;
-        color: var(--text);
-        background: rgba(236, 72, 153, 0.18);
-        border: 1px solid rgba(244, 114, 182, 0.35);
-        padding: 0.4rem 1.05rem;
-        border-radius: 999px;
-        font-weight: 600;
-        transition: transform 0.18s ease, background 0.18s ease;
-      }
-
-      .nav-back:hover,
-      .nav-back:focus-visible {
-        outline: none;
-        background: rgba(236, 72, 153, 0.3);
-        transform: translateY(-1px);
-      }
-
-      header {
-        display: grid;
-        gap: 0.55rem;
-      }
-
-      header h1 {
-        margin: 0;
-        font-size: clamp(2rem, 5vw, 2.8rem);
-      }
-
-      header p {
-        margin: 0;
-        color: var(--muted);
-        line-height: 1.7;
+      header.page-header p {
         max-width: 60ch;
       }
 
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        background: rgba(236, 72, 153, 0.2);
-        color: var(--accent);
-        border-radius: 999px;
-        padding: 0.25rem 0.75rem;
-        font-size: 0.85rem;
-        font-weight: 600;
-      }
-
       .game-panel {
-        background: var(--panel-strong);
-        border-radius: clamp(16px, 4vw, 22px);
-        padding: clamp(1.1rem, 4vw, 1.6rem);
-        border: 1px solid rgba(148, 163, 184, 0.25);
         display: grid;
-        gap: clamp(1.1rem, 4vw, 1.6rem);
+        gap: clamp(0.85rem, 3vw, 1.2rem);
       }
 
       .game-meta {
         display: flex;
         flex-wrap: wrap;
-        gap: 1rem;
-        justify-content: space-between;
+        gap: 0.85rem;
         align-items: center;
+        justify-content: space-between;
       }
 
       .game-meta__stats {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.85rem;
+        gap: 0.65rem;
       }
 
       .pill {
-        background: rgba(248, 113, 220, 0.18);
+        background: rgba(236, 72, 153, 0.2);
         border-radius: 999px;
-        padding: 0.45rem 1rem;
+        padding: 0.4rem 0.95rem;
         font-weight: 600;
         font-size: 0.95rem;
         display: inline-flex;
@@ -137,13 +62,13 @@
         border: none;
         border-radius: 999px;
         background: var(--accent);
-        color: var(--text);
-        padding: 0.65rem 1.6rem;
+        color: var(--text-main);
+        padding: 0.6rem 1.4rem;
         font-weight: 600;
         font-size: 1rem;
         cursor: pointer;
         transition: transform 0.18s ease, background 0.2s ease;
-        box-shadow: 0 20px 40px -25px rgba(236, 72, 153, 0.6);
+        box-shadow: 0 20px 40px -25px rgba(236, 72, 153, 0.55);
       }
 
       .game-meta button:hover,
@@ -155,7 +80,7 @@
 
       .grid {
         display: grid;
-        gap: clamp(0.75rem, 3vw, 1rem);
+        gap: clamp(0.65rem, 3vw, 0.95rem);
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
@@ -164,10 +89,10 @@
         aspect-ratio: 1;
         border-radius: clamp(12px, 3vw, 16px);
         border: none;
-        background: linear-gradient(160deg, rgba(236, 72, 153, 0.3), rgba(14, 165, 233, 0.2));
+        background: linear-gradient(160deg, rgba(236, 72, 153, 0.28), rgba(14, 165, 233, 0.22));
         display: grid;
         place-items: center;
-        font-size: clamp(1.6rem, 6vw, 2.2rem);
+        font-size: clamp(1.6rem, 6vw, 2.1rem);
         font-weight: 700;
         color: transparent;
         cursor: pointer;
@@ -178,14 +103,14 @@
 
       .card[data-state="flipped"],
       .card[data-state="matched"] {
-        color: var(--text);
-        background: rgba(236, 72, 153, 0.25);
-        box-shadow: 0 18px 32px -24px rgba(236, 72, 153, 0.6);
+        color: var(--text-main);
+        background: rgba(236, 72, 153, 0.26);
+        box-shadow: 0 18px 32px -24px rgba(236, 72, 153, 0.55);
       }
 
       .card[data-state="matched"] {
         background: rgba(34, 197, 94, 0.2);
-        box-shadow: 0 18px 32px -24px rgba(34, 197, 94, 0.6);
+        box-shadow: 0 18px 32px -24px rgba(34, 197, 94, 0.5);
         cursor: default;
       }
 
@@ -194,114 +119,17 @@
         outline-offset: 3px;
       }
 
-      .records {
-        display: grid;
-        gap: clamp(1rem, 3vw, 1.5rem);
-      }
-
-      .record-card {
-        background: var(--surface);
-        border-radius: clamp(16px, 4vw, 20px);
-        padding: clamp(1rem, 3vw, 1.4rem);
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        display: grid;
-        gap: 0.75rem;
-      }
-
-      .record-card__header {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-      }
-
-      .record-card__header h2 {
-        margin: 0;
-        font-size: clamp(1.3rem, 3.6vw, 1.6rem);
-      }
-
-      .records-status {
-        margin: 0;
-        font-size: 0.95rem;
-        color: rgba(203, 213, 225, 0.78);
-      }
-
-      .records-status[data-type="error"] {
-        color: var(--danger);
-      }
-
-      .records-status[data-type="success"] {
-        color: var(--success);
-      }
-
-      .records-status[data-type="warning"] {
-        color: var(--warning);
-      }
-
-      .records-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 0.7rem;
+      .records-extra {
+        font-size: 0.85rem;
       }
 
       .records-item {
-        background: rgba(236, 72, 153, 0.12);
-        border-radius: 12px;
-        padding: 0.8rem 1rem;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0.8rem;
-      }
-
-      .records-rank {
-        font-weight: 700;
-        color: var(--accent);
-        font-size: 1.05rem;
-        min-width: 2ch;
-      }
-
-      .records-content {
-        display: grid;
-        gap: 0.25rem;
-        min-width: 0;
-      }
-
-      .records-content strong {
-        font-size: 1.05rem;
-      }
-
-      .records-meta {
-        font-size: 0.85rem;
-        color: rgba(148, 163, 184, 0.85);
-      }
-
-      .records-time {
-        margin-left: auto;
-        font-weight: 700;
-        font-size: 1.05rem;
-      }
-
-      .records-extra {
-        font-size: 0.85rem;
-        color: rgba(191, 219, 254, 0.85);
-        margin-left: auto;
-      }
-
-      .records-empty {
-        font-size: 0.95rem;
-        color: rgba(148, 163, 184, 0.85);
+        gap: 0.85rem;
       }
 
       @media (max-width: 860px) {
-        .app {
-          border-radius: clamp(16px, 6vw, 22px);
-          padding: clamp(1.2rem, 5vw, 1.8rem);
-        }
-
         .grid {
-          gap: clamp(0.6rem, 4vw, 0.85rem);
+          gap: clamp(0.55rem, 4vw, 0.85rem);
         }
       }
 
@@ -343,17 +171,17 @@
       }
     </style>
   </head>
-  <body>
-    <main class="app">
+  <body class="game-page theme-rose">
+    <main class="app-shell">
       <a class="nav-back" href="mini-games.html">← 返回小游戏集合</a>
-      <header>
-        <p class="badge">记忆与专注双排行</p>
+      <header class="page-header">
+        <p class="badge" aria-hidden="true">记忆与专注双排行</p>
         <h1>记忆翻牌</h1>
         <p>
           快速记忆并匹配所有卡片图案，查看你的完成时间与翻牌次数。完成的成绩会同步到个人战绩和全站排行榜。
         </p>
       </header>
-      <section class="game-panel" aria-label="记忆翻牌游戏区域">
+      <section class="section-card game-panel" aria-label="记忆翻牌游戏区域">
         <div class="game-meta">
           <div class="game-meta__stats">
             <span class="pill">用时：<strong id="memoryTimer">00:00</strong></span>

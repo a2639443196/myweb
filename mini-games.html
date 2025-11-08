@@ -7,80 +7,59 @@
     <link rel="stylesheet" href="css/mini-games.css" />
   </head>
   <body>
-    <div class="background-orb" aria-hidden="true"></div>
-    <main>
+    <main class="games-shell">
       <a class="nav-back" href="index.html">← 返回首页</a>
-      <header>
+      <header class="page-header">
         <p class="eyebrow">Mini Games Hub</p>
         <h1>小游戏集合</h1>
-        <p class="intro">
+        <p>
           在这里快速进入训练与放松小游戏。每个游戏都针对不同的专注、反应或记忆能力。
           支持在电脑与移动端体验，随时来一局！
         </p>
       </header>
-      <section class="game-grid" aria-label="小游戏列表">
-        <a class="game-card" href="schulte-table.html">
-          <div class="game-card__icon" aria-hidden="true">🎯</div>
-          <div class="game-card__content">
-            <div class="game-card__header">
+      <section class="games-list" aria-label="小游戏列表">
+        <a class="game-entry" href="schulte-table.html">
+          <div class="game-entry__icon" aria-hidden="true">🎯</div>
+          <div class="game-entry__body">
+            <div class="game-entry__head">
               <h2>舒尔特方格</h2>
-              <span class="game-card__tag">专注训练</span>
+              <span class="game-entry__tag">专注训练</span>
             </div>
-            <p>
-              随机数字方格训练专注力与视敏度，支持自定义大小、排行系统与深浅色模式。
-            </p>
-            <footer>
-              <span>开始挑战</span>
-              <span aria-hidden="true">→</span>
-            </footer>
+            <p>随机数字方格训练专注力与视敏度，支持自定义大小与排行同步。</p>
+            <span class="game-entry__action">开始挑战 →</span>
           </div>
         </a>
-        <a class="game-card" href="reaction-test.html">
-          <div class="game-card__icon" aria-hidden="true">⚡</div>
-          <div class="game-card__content">
-            <div class="game-card__header">
+        <a class="game-entry" href="reaction-test.html">
+          <div class="game-entry__icon" aria-hidden="true">⚡</div>
+          <div class="game-entry__body">
+            <div class="game-entry__head">
               <h2>反应力测试</h2>
-              <span class="game-card__tag">瞬时速度</span>
+              <span class="game-entry__tag">瞬时速度</span>
             </div>
-            <p>
-              倒计时后在信号亮起瞬间点击，记录毫秒级反应时间并争夺排行榜首位。
-            </p>
-            <footer>
-              <span>进入测试</span>
-              <span aria-hidden="true">→</span>
-            </footer>
+            <p>倒计时后在信号亮起瞬间点击，毫秒级记录你的反应速度。</p>
+            <span class="game-entry__action">进入测试 →</span>
           </div>
         </a>
-        <a class="game-card" href="memory-flip.html">
-          <div class="game-card__icon" aria-hidden="true">🧠</div>
-          <div class="game-card__content">
-            <div class="game-card__header">
+        <a class="game-entry" href="memory-flip.html">
+          <div class="game-entry__icon" aria-hidden="true">🧠</div>
+          <div class="game-entry__body">
+            <div class="game-entry__head">
               <h2>记忆翻牌</h2>
-              <span class="game-card__tag">短时记忆</span>
+              <span class="game-entry__tag">短时记忆</span>
             </div>
-            <p>
-              匹配图案配对完成回合，考验记忆与专注，成绩自动参与全球排行榜。
-            </p>
-            <footer>
-              <span>开始配对</span>
-              <span aria-hidden="true">→</span>
-            </footer>
+            <p>匹配图案配对完成回合，考验记忆与专注，支持排行榜同步。</p>
+            <span class="game-entry__action">开始配对 →</span>
           </div>
         </a>
-        <a class="game-card" href="sudoku.html">
-          <div class="game-card__icon" aria-hidden="true">🔢</div>
-          <div class="game-card__content">
-            <div class="game-card__header">
+        <a class="game-entry" href="sudoku.html">
+          <div class="game-entry__icon" aria-hidden="true">🔢</div>
+          <div class="game-entry__body">
+            <div class="game-entry__head">
               <h2>数独挑战</h2>
-              <span class="game-card__tag">逻辑思维</span>
+              <span class="game-entry__tag">逻辑思维</span>
             </div>
-            <p>
-              随机难度数独题目，记录解题用时，支持个人与全站排行榜同步。
-            </p>
-            <footer>
-              <span>立即开局</span>
-              <span aria-hidden="true">→</span>
-            </footer>
+            <p>选择难度填满 9×9 棋盘，记录用时与错误，刷新个人最佳。</p>
+            <span class="game-entry__action">立即开局 →</span>
           </div>
         </a>
       </section>
