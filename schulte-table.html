@@ -151,9 +151,10 @@
 
       .cell {
         position: relative;
-        padding: clamp(1.2rem, 6vw, 2.4rem) clamp(0.5rem, 3vw, 1.2rem);
+        aspect-ratio: 1 / 1;
+        width: 100%;
         font-size: clamp(1.4rem, 5vw, 2.5rem);
-        border-radius: 14px;
+        border-radius: clamp(6px, 1.25vw, 12px);
         border: none;
         background: rgba(255, 255, 255, 0.85);
         color: var(--text);
