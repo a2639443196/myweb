@@ -17,6 +17,7 @@
         --accent-strong: #ec4899;
         --success: #22c55e;
         --danger: #ef4444;
+        --warning: #facc15;
         font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui,
           -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
@@ -24,12 +25,12 @@
       body {
         margin: 0;
         min-height: 100vh;
+        min-height: 100dvh;
         background: radial-gradient(circle at top, #312e81 0%, #111827 60%);
         color: var(--text);
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: clamp(1rem, 5vw, 3rem);
       }
 
       .app {
@@ -42,6 +43,7 @@
         display: grid;
         gap: clamp(1.3rem, 4vw, 2.2rem);
         box-shadow: 0 40px 60px -35px rgba(236, 72, 153, 0.35);
+        margin: clamp(1rem, 4vw, 2.5rem);
       }
 
       .nav-back {
@@ -231,6 +233,10 @@
         color: var(--success);
       }
 
+      .records-status[data-type="warning"] {
+        color: var(--warning);
+      }
+
       .records-list {
         list-style: none;
         margin: 0;
@@ -289,10 +295,6 @@
       }
 
       @media (max-width: 860px) {
-        body {
-          padding: clamp(0.8rem, 5vw, 1.5rem);
-        }
-
         .app {
           border-radius: clamp(16px, 6vw, 22px);
           padding: clamp(1.2rem, 5vw, 1.8rem);
@@ -403,6 +405,26 @@
       const personalRecordsList = document.getElementById("memoryPersonalRecords");
       const leaderboardStatus = document.getElementById("memoryLeaderboardStatus");
       const leaderboardList = document.getElementById("memoryLeaderboard");
+      const fallbackLeaderboard = [
+        {
+          username: "示例玩家A",
+          elapsedMs: 64000,
+          moves: 34,
+          updatedAt: "2024-03-15T08:30:00Z",
+        },
+        {
+          username: "示例玩家B",
+          elapsedMs: 71500,
+          moves: 36,
+          updatedAt: "2024-02-28T14:20:00Z",
+        },
+        {
+          username: "示例玩家C",
+          elapsedMs: 80200,
+          moves: 38,
+          updatedAt: "2024-01-19T11:05:00Z",
+        },
+      ];
 
       const icons = [
         "🍉",
@@ -780,7 +802,12 @@
           }
         } catch (error) {
           console.error(error);
-          setStatus(leaderboardStatus, error.message || "获取排行榜失败", "error");
+          renderLeaderboard(fallbackLeaderboard);
+          setStatus(
+            leaderboardStatus,
+            "排行榜服务暂不可用，已显示示例数据。",
+            "warning"
+          );
         } finally {
           setListBusy(leaderboardList, false);
         }

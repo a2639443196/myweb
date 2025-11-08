@@ -24,12 +24,12 @@
       body {
         margin: 0;
         min-height: 100vh;
+        min-height: 100dvh;
         background: radial-gradient(circle at top, #0c4a6e 0%, #020617 70%);
         color: var(--text);
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: clamp(1rem, 5vw, 3rem);
       }
 
       .app {
@@ -42,6 +42,7 @@
         display: grid;
         gap: clamp(1.3rem, 4vw, 2.2rem);
         box-shadow: 0 40px 60px -35px rgba(14, 165, 233, 0.5);
+        margin: clamp(1rem, 4vw, 2.5rem);
       }
 
       .nav-back {
@@ -315,6 +316,10 @@
         color: var(--success);
       }
 
+      .records-status[data-type="warning"] {
+        color: #facc15;
+      }
+
       .records-list {
         list-style: none;
         margin: 0;
@@ -384,10 +389,6 @@
       }
 
       @media (max-width: 720px) {
-        body {
-          padding: clamp(0.8rem, 5vw, 1.4rem);
-        }
-
         .app {
           border-radius: clamp(16px, 6vw, 24px);
           padding: clamp(1.2rem, 5vw, 1.8rem);
@@ -532,6 +533,29 @@
       const personalRecordsList = document.getElementById("sudokuPersonalRecords");
       const leaderboardStatus = document.getElementById("sudokuLeaderboardStatus");
       const leaderboardList = document.getElementById("sudokuLeaderboard");
+      const fallbackLeaderboard = [
+        {
+          username: "示例玩家A",
+          difficulty: "hard",
+          elapsedMs: 182000,
+          mistakes: 0,
+          updatedAt: "2024-04-12T08:30:00Z",
+        },
+        {
+          username: "示例玩家B",
+          difficulty: "medium",
+          elapsedMs: 215000,
+          mistakes: 1,
+          updatedAt: "2024-03-22T10:15:00Z",
+        },
+        {
+          username: "示例玩家C",
+          difficulty: "easy",
+          elapsedMs: 238000,
+          mistakes: 2,
+          updatedAt: "2024-02-05T13:45:00Z",
+        },
+      ];
 
       const puzzles = {
         easy: [
@@ -982,7 +1006,12 @@
           }
         } catch (error) {
           console.error(error);
-          setStatus(leaderboardStatus, error.message || "获取排行榜失败", "error");
+          renderLeaderboard(fallbackLeaderboard);
+          setStatus(
+            leaderboardStatus,
+            "排行榜服务暂不可用，已显示示例数据。",
+            "warning"
+          );
         } finally {
           setListBusy(leaderboardList, false);
         }

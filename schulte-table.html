@@ -14,6 +14,7 @@
         --accent: #3b82f6;
         --accent-dark: #1d4ed8;
         --danger: #ef4444;
+        --warning: #f59e0b;
         font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
       }
 
@@ -37,7 +38,7 @@
         align-items: center;
         justify-content: center;
         min-height: 100vh;
-        padding: 1.5rem;
+        min-height: 100dvh;
         overflow-x: hidden;
       }
 
@@ -48,6 +49,7 @@
         border-radius: 18px;
         padding: clamp(1.25rem, 4vw, 2.25rem);
         box-shadow: 0 20px 60px -35px rgba(15, 23, 42, 0.5);
+        margin: clamp(1rem, 4vw, 2.5rem);
       }
 
       header {
@@ -320,6 +322,10 @@
         color: #047857;
       }
 
+      .records-status[data-type="warning"] {
+        color: var(--warning);
+      }
+
       .records-list {
         list-style: none;
         margin: 0;
@@ -419,13 +425,7 @@
       }
 
       @media (max-width: 720px) {
-        body {
-          padding: clamp(0.75rem, 4vw, 1rem);
-          align-items: stretch;
-        }
-
         .app {
-          margin: 0 auto;
           border-radius: 16px;
           padding: clamp(0.95rem, 4vw, 1.5rem);
           box-shadow: 0 14px 40px -28px rgba(15, 23, 42, 0.55);
@@ -658,6 +658,26 @@
       const personalStatus = document.getElementById("personalStatus");
       const leaderboardRecordsList = document.getElementById("leaderboardRecords");
       const leaderboardStatus = document.getElementById("leaderboardStatus");
+      const fallbackLeaderboard = [
+        {
+          username: "示例玩家A",
+          gridSize: 5,
+          elapsedMs: 42500,
+          updatedAt: "2024-04-08T09:30:00Z",
+        },
+        {
+          username: "示例玩家B",
+          gridSize: 6,
+          elapsedMs: 51200,
+          updatedAt: "2024-03-21T12:10:00Z",
+        },
+        {
+          username: "示例玩家C",
+          gridSize: 4,
+          elapsedMs: 36800,
+          updatedAt: "2024-02-14T15:45:00Z",
+        },
+      ];
 
       let nextNumber = 1;
       let totalCount = 25;
@@ -896,7 +916,12 @@
           }
         } catch (error) {
           console.error(error);
-          setStatus(leaderboardStatus, error.message || "获取排行榜失败", "error");
+          renderLeaderboard(fallbackLeaderboard);
+          setStatus(
+            leaderboardStatus,
+            "排行榜服务暂不可用，已显示示例数据。",
+            "warning"
+          );
         } finally {
           setListBusy(leaderboardRecordsList, false);
         }
