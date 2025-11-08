@@ -377,6 +377,228 @@ def create_app() -> Flask:
             "isNewBest": improved,
         })
 
+    @app.get("/api/reaction/records/me")
+    def get_my_reaction_records() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        try:
+            records = list_reaction_records_by_account(account_id=account["id"])
+        except sqlite3.Error as error:
+            return jsonify({"error": "获取个人成绩失败", "details": str(error)}), 500
+
+        return jsonify({
+            "records": [serialize_reaction_record(item) for item in records]
+        })
+
+    @app.get("/api/reaction/leaderboard")
+    def reaction_leaderboard() -> Any:
+        try:
+            records = list_reaction_leaderboard()
+        except sqlite3.Error as error:
+            return jsonify({"error": "获取排行榜失败", "details": str(error)}), 500
+
+        return jsonify({
+            "records": [
+                serialize_reaction_record(item, include_username=True) for item in records
+            ]
+        })
+
+    @app.post("/api/reaction/records")
+    def submit_reaction_record() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        payload = request.get_json(silent=True) or {}
+        reaction_time_ms = payload.get("reactionTimeMs")
+
+        try:
+            reaction_time_ms_int = int(reaction_time_ms)
+        except (TypeError, ValueError):
+            return jsonify({"error": "成绩数据格式不正确。"}), 400
+
+        if reaction_time_ms_int <= 0:
+            return jsonify({"error": "成绩必须大于 0。"}), 400
+
+        try:
+            record, improved = upsert_reaction_record(
+                account_id=account["id"],
+                reaction_time_ms=reaction_time_ms_int,
+            )
+        except sqlite3.Error as error:
+            return jsonify({"error": "保存成绩失败", "details": str(error)}), 500
+
+        if improved:
+            try:
+                create_activity(
+                    account_id=account["id"],
+                    category="reaction",
+                    action="best_record",
+                    details={"reactionTimeMs": reaction_time_ms_int},
+                )
+            except sqlite3.Error:
+                pass
+
+        return jsonify({
+            "record": serialize_reaction_record(record),
+            "isNewBest": improved,
+        })
+
+    @app.get("/api/memory-flip/records/me")
+    def get_my_memory_records() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        try:
+            records = list_memory_flip_records_by_account(account_id=account["id"])
+        except sqlite3.Error as error:
+            return jsonify({"error": "获取个人成绩失败", "details": str(error)}), 500
+
+        return jsonify({
+            "records": [serialize_memory_flip_record(item) for item in records]
+        })
+
+    @app.get("/api/memory-flip/leaderboard")
+    def memory_flip_leaderboard() -> Any:
+        try:
+            records = list_memory_flip_leaderboard()
+        except sqlite3.Error as error:
+            return jsonify({"error": "获取排行榜失败", "details": str(error)}), 500
+
+        return jsonify({
+            "records": [
+                serialize_memory_flip_record(item, include_username=True) for item in records
+            ]
+        })
+
+    @app.post("/api/memory-flip/records")
+    def submit_memory_record() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        payload = request.get_json(silent=True) or {}
+        elapsed_ms = payload.get("elapsedMs")
+        moves = payload.get("moves")
+
+        try:
+            elapsed_ms_int = int(elapsed_ms)
+            moves_int = int(moves)
+        except (TypeError, ValueError):
+            return jsonify({"error": "成绩数据格式不正确。"}), 400
+
+        if elapsed_ms_int <= 0 or moves_int <= 0:
+            return jsonify({"error": "成绩必须大于 0。"}), 400
+
+        try:
+            record, improved = upsert_memory_flip_record(
+                account_id=account["id"],
+                elapsed_ms=elapsed_ms_int,
+                moves=moves_int,
+            )
+        except sqlite3.Error as error:
+            return jsonify({"error": "保存成绩失败", "details": str(error)}), 500
+
+        if improved:
+            try:
+                create_activity(
+                    account_id=account["id"],
+                    category="memory-flip",
+                    action="best_record",
+                    details={"elapsedMs": elapsed_ms_int, "moves": moves_int},
+                )
+            except sqlite3.Error:
+                pass
+
+        return jsonify({
+            "record": serialize_memory_flip_record(record),
+            "isNewBest": improved,
+        })
+
+    @app.get("/api/sudoku/records/me")
+    def get_my_sudoku_records() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        try:
+            records = list_sudoku_records_by_account(account_id=account["id"])
+        except sqlite3.Error as error:
+            return jsonify({"error": "获取个人成绩失败", "details": str(error)}), 500
+
+        return jsonify({
+            "records": [serialize_sudoku_record(item) for item in records]
+        })
+
+    @app.get("/api/sudoku/leaderboard")
+    def sudoku_leaderboard() -> Any:
+        try:
+            records = list_sudoku_leaderboard()
+        except sqlite3.Error as error:
+            return jsonify({"error": "获取排行榜失败", "details": str(error)}), 500
+
+        return jsonify({
+            "records": [
+                serialize_sudoku_record(item, include_username=True) for item in records
+            ]
+        })
+
+    @app.post("/api/sudoku/records")
+    def submit_sudoku_record() -> Any:
+        account = get_current_account()
+        if not account:
+            return jsonify({"error": "未登录"}), 401
+
+        payload = request.get_json(silent=True) or {}
+        difficulty = (payload.get("difficulty") or "").strip()
+        elapsed_ms = payload.get("elapsedMs")
+        mistakes = payload.get("mistakes")
+
+        if difficulty not in {"easy", "medium", "hard"}:
+            return jsonify({"error": "难度参数不正确。"}), 400
+
+        try:
+            elapsed_ms_int = int(elapsed_ms)
+            mistakes_int = int(mistakes)
+        except (TypeError, ValueError):
+            return jsonify({"error": "成绩数据格式不正确。"}), 400
+
+        if elapsed_ms_int <= 0 or mistakes_int < 0:
+            return jsonify({"error": "成绩必须为有效正数。"}), 400
+
+        try:
+            record, improved = upsert_sudoku_record(
+                account_id=account["id"],
+                difficulty=difficulty,
+                elapsed_ms=elapsed_ms_int,
+                mistakes=mistakes_int,
+            )
+        except sqlite3.Error as error:
+            return jsonify({"error": "保存成绩失败", "details": str(error)}), 500
+
+        if improved:
+            try:
+                create_activity(
+                    account_id=account["id"],
+                    category="sudoku",
+                    action="best_record",
+                    details={
+                        "difficulty": difficulty,
+                        "elapsedMs": elapsed_ms_int,
+                        "mistakes": mistakes_int,
+                    },
+                )
+            except sqlite3.Error:
+                pass
+
+        return jsonify({
+            "record": serialize_sudoku_record(record),
+            "isNewBest": improved,
+        })
+
     @sock.route("/ws/liars-bar")
     def liars_bar_socket(ws: Any) -> None:
         liars_bar_manager.register_socket(ws)
@@ -504,6 +726,57 @@ def init_db(database_path: Path) -> None:
         )
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_schulte_records_elapsed ON schulte_records(elapsed_ms)"
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS reaction_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL,
+                reaction_time_ms INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(account_id),
+                FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+            )
+            """
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_reaction_records_time ON reaction_records(reaction_time_ms)"
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS memory_flip_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL,
+                elapsed_ms INTEGER NOT NULL,
+                moves INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(account_id),
+                FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+            )
+            """
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_memory_flip_elapsed ON memory_flip_records(elapsed_ms)"
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sudoku_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL,
+                difficulty TEXT NOT NULL,
+                elapsed_ms INTEGER NOT NULL,
+                mistakes INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(account_id, difficulty),
+                FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+            )
+            """
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_sudoku_records_elapsed ON sudoku_records(elapsed_ms)"
         )
         connection.commit()
 
@@ -755,6 +1028,51 @@ def serialize_schulte_record(
     return payload
 
 
+def serialize_reaction_record(
+    record: Dict[str, Any], *, include_username: bool = False
+) -> Dict[str, Any]:
+    payload = {
+        "id": record.get("id"),
+        "reactionTimeMs": record.get("reaction_time_ms"),
+        "createdAt": record.get("created_at"),
+        "updatedAt": record.get("updated_at"),
+    }
+    if include_username and record.get("username"):
+        payload["username"] = record["username"]
+    return payload
+
+
+def serialize_memory_flip_record(
+    record: Dict[str, Any], *, include_username: bool = False
+) -> Dict[str, Any]:
+    payload = {
+        "id": record.get("id"),
+        "elapsedMs": record.get("elapsed_ms"),
+        "moves": record.get("moves"),
+        "createdAt": record.get("created_at"),
+        "updatedAt": record.get("updated_at"),
+    }
+    if include_username and record.get("username"):
+        payload["username"] = record["username"]
+    return payload
+
+
+def serialize_sudoku_record(
+    record: Dict[str, Any], *, include_username: bool = False
+) -> Dict[str, Any]:
+    payload = {
+        "id": record.get("id"),
+        "difficulty": record.get("difficulty"),
+        "elapsedMs": record.get("elapsed_ms"),
+        "mistakes": record.get("mistakes"),
+        "createdAt": record.get("created_at"),
+        "updatedAt": record.get("updated_at"),
+    }
+    if include_username and record.get("username"):
+        payload["username"] = record["username"]
+    return payload
+
+
 def upsert_schulte_record(
     *, account_id: int, grid_size: int, elapsed_ms: int
 ) -> tuple[Dict[str, Any], bool]:
@@ -867,6 +1185,301 @@ def list_schulte_leaderboard(limit: int = 20) -> list[Dict[str, Any]]:
     )
 
     return best[:limit]
+
+
+def upsert_reaction_record(
+    *, account_id: int, reaction_time_ms: int
+) -> tuple[Dict[str, Any], bool]:
+    now = datetime.now(timezone.utc).isoformat()
+    with get_db_connection() as connection:
+        existing = connection.execute(
+            """
+            SELECT id, reaction_time_ms
+            FROM reaction_records
+            WHERE account_id = ?
+            """,
+            (account_id,),
+        ).fetchone()
+
+        improved = False
+        record_id: Optional[int]
+
+        if existing:
+            if int(existing["reaction_time_ms"]) > reaction_time_ms:
+                connection.execute(
+                    """
+                    UPDATE reaction_records
+                    SET reaction_time_ms = ?, updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (reaction_time_ms, now, existing["id"]),
+                )
+                connection.commit()
+                improved = True
+            record_id = int(existing["id"])
+        else:
+            cursor = connection.execute(
+                """
+                INSERT INTO reaction_records (
+                    account_id, reaction_time_ms, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?)
+                """,
+                (account_id, reaction_time_ms, now, now),
+            )
+            connection.commit()
+            record_id = cursor.lastrowid
+            improved = True
+
+        row = connection.execute(
+            """
+            SELECT id, account_id, reaction_time_ms, created_at, updated_at
+            FROM reaction_records
+            WHERE id = ?
+            """,
+            (record_id,),
+        ).fetchone()
+
+    if not row:
+        raise sqlite3.Error("未能保存反应力成绩")
+
+    return dict(row), improved
+
+
+def list_reaction_records_by_account(*, account_id: int) -> list[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, account_id, reaction_time_ms, created_at, updated_at
+            FROM reaction_records
+            WHERE account_id = ?
+            ORDER BY reaction_time_ms ASC
+            """,
+            (account_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def list_reaction_leaderboard(limit: int = 20) -> list[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT
+                rr.id,
+                rr.account_id,
+                rr.reaction_time_ms,
+                rr.created_at,
+                rr.updated_at,
+                a.username
+            FROM reaction_records rr
+            JOIN accounts a ON rr.account_id = a.id
+            ORDER BY rr.reaction_time_ms ASC, rr.updated_at ASC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def upsert_memory_flip_record(
+    *, account_id: int, elapsed_ms: int, moves: int
+) -> tuple[Dict[str, Any], bool]:
+    now = datetime.now(timezone.utc).isoformat()
+    with get_db_connection() as connection:
+        existing = connection.execute(
+            """
+            SELECT id, elapsed_ms, moves
+            FROM memory_flip_records
+            WHERE account_id = ?
+            """,
+            (account_id,),
+        ).fetchone()
+
+        improved = False
+        record_id: Optional[int]
+
+        if existing:
+            better_time = int(existing["elapsed_ms"]) > elapsed_ms
+            same_time_better_moves = (
+                int(existing["elapsed_ms"]) == elapsed_ms
+                and int(existing["moves"]) > moves
+            )
+            if better_time or same_time_better_moves:
+                connection.execute(
+                    """
+                    UPDATE memory_flip_records
+                    SET elapsed_ms = ?, moves = ?, updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (elapsed_ms, moves, now, existing["id"]),
+                )
+                connection.commit()
+                improved = True
+            record_id = int(existing["id"])
+        else:
+            cursor = connection.execute(
+                """
+                INSERT INTO memory_flip_records (
+                    account_id, elapsed_ms, moves, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (account_id, elapsed_ms, moves, now, now),
+            )
+            connection.commit()
+            record_id = cursor.lastrowid
+            improved = True
+
+        row = connection.execute(
+            """
+            SELECT id, account_id, elapsed_ms, moves, created_at, updated_at
+            FROM memory_flip_records
+            WHERE id = ?
+            """,
+            (record_id,),
+        ).fetchone()
+
+    if not row:
+        raise sqlite3.Error("未能保存翻牌成绩")
+
+    return dict(row), improved
+
+
+def list_memory_flip_records_by_account(*, account_id: int) -> list[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, account_id, elapsed_ms, moves, created_at, updated_at
+            FROM memory_flip_records
+            WHERE account_id = ?
+            ORDER BY elapsed_ms ASC, moves ASC
+            """,
+            (account_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def list_memory_flip_leaderboard(limit: int = 20) -> list[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT
+                mr.id,
+                mr.account_id,
+                mr.elapsed_ms,
+                mr.moves,
+                mr.created_at,
+                mr.updated_at,
+                a.username
+            FROM memory_flip_records mr
+            JOIN accounts a ON mr.account_id = a.id
+            ORDER BY mr.elapsed_ms ASC, mr.moves ASC, mr.updated_at ASC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def upsert_sudoku_record(
+    *, account_id: int, difficulty: str, elapsed_ms: int, mistakes: int
+) -> tuple[Dict[str, Any], bool]:
+    now = datetime.now(timezone.utc).isoformat()
+    with get_db_connection() as connection:
+        existing = connection.execute(
+            """
+            SELECT id, elapsed_ms, mistakes
+            FROM sudoku_records
+            WHERE account_id = ? AND difficulty = ?
+            """,
+            (account_id, difficulty),
+        ).fetchone()
+
+        improved = False
+        record_id: Optional[int]
+
+        if existing:
+            better_time = int(existing["elapsed_ms"]) > elapsed_ms
+            same_time_better_mistakes = (
+                int(existing["elapsed_ms"]) == elapsed_ms
+                and int(existing["mistakes"]) > mistakes
+            )
+            if better_time or same_time_better_mistakes:
+                connection.execute(
+                    """
+                    UPDATE sudoku_records
+                    SET elapsed_ms = ?, mistakes = ?, updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (elapsed_ms, mistakes, now, existing["id"]),
+                )
+                connection.commit()
+                improved = True
+            record_id = int(existing["id"])
+        else:
+            cursor = connection.execute(
+                """
+                INSERT INTO sudoku_records (
+                    account_id, difficulty, elapsed_ms, mistakes, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (account_id, difficulty, elapsed_ms, mistakes, now, now),
+            )
+            connection.commit()
+            record_id = cursor.lastrowid
+            improved = True
+
+        row = connection.execute(
+            """
+            SELECT id, account_id, difficulty, elapsed_ms, mistakes, created_at, updated_at
+            FROM sudoku_records
+            WHERE id = ?
+            """,
+            (record_id,),
+        ).fetchone()
+
+    if not row:
+        raise sqlite3.Error("未能保存数独成绩")
+
+    return dict(row), improved
+
+
+def list_sudoku_records_by_account(*, account_id: int) -> list[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, account_id, difficulty, elapsed_ms, mistakes, created_at, updated_at
+            FROM sudoku_records
+            WHERE account_id = ?
+            ORDER BY difficulty ASC
+            """,
+            (account_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def list_sudoku_leaderboard(limit: int = 20) -> list[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT
+                sr.id,
+                sr.account_id,
+                sr.difficulty,
+                sr.elapsed_ms,
+                sr.mistakes,
+                sr.created_at,
+                sr.updated_at,
+                a.username
+            FROM sudoku_records sr
+            JOIN accounts a ON sr.account_id = a.id
+            ORDER BY sr.elapsed_ms ASC, sr.mistakes ASC, sr.updated_at ASC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def get_current_account() -> Optional[Dict[str, Any]]:

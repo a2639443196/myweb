@@ -4,98 +4,38 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>反应力测试 | Mini Games</title>
+    <link rel="stylesheet" href="css/mobile-game-shell.css" />
     <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #0f172a;
-        --panel: rgba(15, 23, 42, 0.72);
-        --panel-solid: rgba(15, 23, 42, 0.92);
-        --text: #f8fafc;
-        --muted: #cbd5f5;
-        --accent: #38bdf8;
-        --accent-strong: #0ea5e9;
-        --success: #22c55e;
-        --danger: #ef4444;
-        --warning: #f59e0b;
-        font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui,
-          -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      body.theme-cyan {
+        --surface: rgba(15, 23, 42, 0.78);
+        --surface-strong: rgba(15, 23, 42, 0.92);
+        --text: var(--text-main);
+        --muted: var(--text-muted);
       }
 
-      body {
-        margin: 0;
-        min-height: 100vh;
-        min-height: 100dvh;
-        background: radial-gradient(circle at top, #082f49 0%, #020617 65%);
-        color: var(--text);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .app-shell {
+        gap: clamp(1rem, 4vw, 1.5rem);
       }
 
-      .app {
-        width: min(960px, 100%);
-        background: var(--panel);
-        border-radius: clamp(18px, 5vw, 26px);
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        backdrop-filter: blur(16px);
-        padding: clamp(1.4rem, 4vw, 2.4rem);
-        display: grid;
-        gap: clamp(1.2rem, 4vw, 2rem);
-        box-shadow: 0 40px 60px -35px rgba(14, 165, 233, 0.55);
-        margin: clamp(1rem, 4vw, 2.5rem);
+      header.page-header {
+        gap: 0.45rem;
       }
 
-      .nav-back {
-        align-self: flex-start;
-        text-decoration: none;
-        color: var(--text);
-        background: rgba(56, 189, 248, 0.18);
-        border: 1px solid rgba(125, 211, 252, 0.35);
-        padding: 0.4rem 1.05rem;
-        border-radius: 999px;
-        font-weight: 600;
-        transition: transform 0.18s ease, background 0.18s ease;
-      }
-
-      .nav-back:hover,
-      .nav-back:focus-visible {
-        outline: none;
-        background: rgba(56, 189, 248, 0.3);
-        transform: translateY(-1px);
-      }
-
-      header {
-        display: grid;
-        gap: 0.5rem;
-      }
-
-      header h1 {
-        margin: 0;
-        font-size: clamp(1.9rem, 4.5vw, 2.6rem);
-      }
-
-      header p {
-        margin: 0;
-        color: var(--muted);
-        line-height: 1.65;
+      header.page-header p {
         max-width: 60ch;
       }
 
       .reaction-panel {
-        background: var(--panel-solid);
-        border-radius: clamp(16px, 4vw, 20px);
-        padding: clamp(1.1rem, 4vw, 1.6rem);
         display: grid;
-        gap: 1rem;
-        border: 1px solid rgba(148, 163, 184, 0.25);
+        gap: clamp(0.85rem, 3vw, 1.1rem);
       }
 
       .reaction-pad {
         position: relative;
-        border-radius: clamp(14px, 3vw, 18px);
+        border-radius: clamp(14px, 4vw, 18px);
         background: rgba(56, 189, 248, 0.14);
-        border: 1px solid rgba(56, 189, 248, 0.3);
-        min-height: clamp(220px, 45vh, 320px);
+        border: 1px solid rgba(56, 189, 248, 0.32);
+        min-height: clamp(220px, 48vh, 320px);
         display: grid;
         place-items: center;
         text-align: center;
@@ -158,14 +98,14 @@
       .reaction-stats {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: clamp(0.9rem, 4vw, 1.4rem);
+        gap: clamp(0.9rem, 4vw, 1.3rem);
       }
 
       .stat-card {
-        background: rgba(15, 23, 42, 0.65);
+        background: rgba(15, 23, 42, 0.7);
         border-radius: 14px;
-        padding: clamp(0.8rem, 3vw, 1.2rem);
-        border: 1px solid rgba(148, 163, 184, 0.18);
+        padding: clamp(0.8rem, 3vw, 1.1rem);
+        border: 1px solid rgba(148, 163, 184, 0.22);
         display: grid;
         gap: 0.4rem;
       }
@@ -190,100 +130,6 @@
         line-height: 1.5;
       }
 
-      .records {
-        display: grid;
-        gap: clamp(1rem, 3vw, 1.4rem);
-      }
-
-      .record-card {
-        background: rgba(15, 23, 42, 0.68);
-        border-radius: 16px;
-        padding: clamp(1rem, 3vw, 1.4rem);
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        display: grid;
-        gap: 0.75rem;
-      }
-
-      .record-card__header {
-        display: flex;
-        flex-direction: column;
-        gap: 0.4rem;
-      }
-
-      .record-card__header h2 {
-        margin: 0;
-        font-size: clamp(1.2rem, 3.6vw, 1.6rem);
-      }
-
-      .records-status {
-        margin: 0;
-        font-size: 0.95rem;
-        color: rgba(203, 213, 225, 0.8);
-      }
-
-      .records-status[data-type="error"] {
-        color: var(--danger);
-      }
-
-      .records-status[data-type="success"] {
-        color: var(--success);
-      }
-
-      .records-status[data-type="warning"] {
-        color: var(--warning);
-      }
-
-      .records-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 0.65rem;
-      }
-
-      .records-item {
-        background: rgba(56, 189, 248, 0.12);
-        border-radius: 12px;
-        padding: 0.75rem 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-      }
-
-      .records-rank {
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: var(--accent);
-        min-width: 2ch;
-      }
-
-      .records-content {
-        display: grid;
-        gap: 0.25rem;
-        min-width: 0;
-      }
-
-      .records-content strong {
-        font-size: 1.05rem;
-      }
-
-      .records-meta {
-        font-size: 0.85rem;
-        color: rgba(148, 163, 184, 0.8);
-      }
-
-      .records-time {
-        font-weight: 700;
-        font-size: 1.1rem;
-        margin-left: auto;
-      }
-
-      .records-empty {
-        font-size: 0.95rem;
-        color: rgba(148, 163, 184, 0.85);
-      }
-
       .badge {
         display: inline-flex;
         align-items: center;
@@ -297,17 +143,8 @@
       }
 
       @media (max-width: 760px) {
-        .app {
-          border-radius: clamp(16px, 6vw, 22px);
-          padding: clamp(1.1rem, 5vw, 1.6rem);
-        }
-
-        .reaction-panel {
-          padding: clamp(0.9rem, 5vw, 1.3rem);
-        }
-
         .reaction-pad {
-          min-height: clamp(180px, 45vh, 260px);
+          min-height: clamp(180px, 46vh, 260px);
         }
 
         .reaction-controls {
@@ -349,17 +186,17 @@
       }
     </style>
   </head>
-  <body>
-    <main class="app">
+  <body class="game-page theme-cyan">
+    <main class="app-shell">
       <a class="nav-back" href="mini-games.html">← 返回小游戏集合</a>
-      <header>
+      <header class="page-header">
         <p class="badge" aria-hidden="true">毫秒级排行同步</p>
         <h1>反应力测试</h1>
         <p>
           在随机倒计时后迅速点击面板，测试你的即时反应速度。每一次有效成绩都会自动加入个人战绩和全站排行榜。
         </p>
       </header>
-      <section class="reaction-panel" aria-label="反应力测试区域">
+      <section class="section-card reaction-panel" aria-label="反应力测试区域">
         <div
           class="reaction-pad"
           id="reactionPad"
