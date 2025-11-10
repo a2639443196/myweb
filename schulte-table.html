@@ -279,6 +279,15 @@
         box-shadow: 0 12px 30px -20px rgba(15, 23, 42, 0.55);
         cursor: pointer;
         transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
+        /* 移动端触摸优化 */
+        -webkit-tap-highlight-color: rgba(129, 140, 248, 0.3);
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+        touch-action: manipulation;
+        /* 增加触摸目标大小 */
+        min-height: 44px;
+        min-width: 44px;
       }
 
       .cell:focus-visible {
@@ -288,6 +297,24 @@
 
       .cell:active {
         transform: scale(0.97);
+      }
+
+      /* 移动端触摸反馈 */
+      .cell:hover,
+      .cell:focus {
+        background: rgba(129, 140, 248, 0.15);
+      }
+
+      /* 移动端特定的触摸状态 */
+      @media (hover: none) and (pointer: coarse) {
+        .cell {
+          /* 移除悬停效果在触摸设备上 */
+        }
+
+        .cell:active {
+          background: rgba(129, 140, 248, 0.25);
+          transform: scale(0.95);
+        }
       }
 
       .cell.found {
@@ -807,10 +834,7 @@
         }
       }
 
-      function handleCellClick(event) {
-        event.preventDefault();
-
-        const button = event.currentTarget;
+      function handleCellInteraction(button) {
         const value = Number(button.dataset.value);
 
         // 如果游戏未开始，点击任意卡片开始游戏
@@ -857,6 +881,21 @@
         }
       }
 
+      function handleCellClick(event) {
+        event.preventDefault();
+        const button = event.currentTarget;
+        handleCellInteraction(button);
+      }
+
+      // 备用的事件处理函数，用于兼容性问题
+      function handleCellAlternativeEvent(event) {
+        event.preventDefault();
+        const button = this; // 'this' should be the button element
+        if (button && button.classList.contains('cell')) {
+          handleCellInteraction(button);
+        }
+      }
+
       function createGrid(size, startGame = false) {
         const clampedSize = clampSize(size);
         currentGridSize = clampedSize;
@@ -880,12 +919,58 @@
           cellButton.dataset.value = value;
           cellButton.setAttribute("role", "gridcell");
           cellButton.disabled = false; // 初始启用，可以点击开始游戏
+
+          // 为每个按钮创建独立的触摸状态
+          const touchState = {
+            startTime: 0,
+            moved: false
+          };
+
+          // 主要点击事件
           cellButton.addEventListener("click", handleCellClick);
 
-          // 添加触摸事件防止滑动
+          // 添加多种触摸事件以确保兼容性
           cellButton.addEventListener("touchstart", (e) => {
-            e.preventDefault();
+            touchState.startTime = Date.now();
+            touchState.moved = false;
+            // 不阻止默认行为，允许正常的点击事件处理
+          }, { passive: true });
+
+          cellButton.addEventListener("touchmove", (e) => {
+            touchState.moved = true;
+          }, { passive: true });
+
+          cellButton.addEventListener("touchend", (e) => {
+            const touchDuration = Date.now() - touchState.startTime;
+            if (!touchState.moved && touchDuration < 300 && touchDuration > 30) {
+              e.preventDefault();
+              handleCellInteraction(cellButton);
+            }
           }, { passive: false });
+
+          // 添加触摸取消处理
+          cellButton.addEventListener("touchcancel", (e) => {
+            touchState.moved = true;
+          }, { passive: true });
+
+          // 备用事件监听器，用于某些特定的移动设备
+          cellButton.addEventListener("pointerdown", (e) => {
+            if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+              e.preventDefault();
+              touchState.startTime = Date.now();
+              touchState.moved = false;
+            }
+          });
+
+          cellButton.addEventListener("pointerup", (e) => {
+            if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+              const touchDuration = Date.now() - touchState.startTime;
+              if (!touchState.moved && touchDuration < 300 && touchDuration > 30) {
+                e.preventDefault();
+                handleCellInteraction(cellButton);
+              }
+            }
+          });
 
           fragment.appendChild(cellButton);
         });
