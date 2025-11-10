@@ -1,0 +1,160 @@
+/* CSS核心变量定义 */
+:root {
+  /* 颜色系统 */
+  --color-primary: #3b82f6;
+  --color-primary-dark: #2563eb;
+  --color-primary-light: #60a5fa;
+  --color-secondary: #64748b;
+  --color-accent: #06b6d4;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-danger: #dc2626;
+
+  /* 深色主题变量 */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-surface: #334155;
+  --bg-card: rgba(15, 23, 42, 0.72);
+  --bg-card-hover: rgba(30, 41, 59, 0.88);
+  --bg-overlay: rgba(0, 0, 0, 0.8);
+
+  /* 文本颜色 */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-disabled: #64748b;
+
+  /* 边框和分割线 */
+  --border-color: rgba(148, 163, 184, 0.25);
+  --border-hover: rgba(148, 163, 184, 0.4);
+  --border-focus: rgba(59, 130, 246, 0.5);
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 30px 60px -38px rgba(14, 165, 233, 0.55);
+
+  /* 字体系统 */
+  --font-family-primary: "Inter", "SF Pro Display", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-family-mono: "SF Mono", "Monaco", "Inconsolata", "Roboto Mono", "Source Code Pro", monospace;
+
+  /* 字体大小 */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
+  --text-5xl: 3rem;       /* 48px */
+
+  /* 行高 */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* 间距系统 */
+  --space-1: 0.25rem;     /* 4px */
+  --space-2: 0.5rem;      /* 8px */
+  --space-3: 0.75rem;     /* 12px */
+  --space-4: 1rem;        /* 16px */
+  --space-5: 1.25rem;     /* 20px */
+  --space-6: 1.5rem;      /* 24px */
+  --space-8: 2rem;        /* 32px */
+  --space-10: 2.5rem;     /* 40px */
+  --space-12: 3rem;       /* 48px */
+  --space-16: 4rem;       /* 64px */
+  --space-20: 5rem;       /* 80px */
+
+  /* 圆角 */
+  --radius-sm: 0.25rem;   /* 4px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px */
+  --radius-2xl: 1.5rem;   /* 24px */
+  --radius-full: 9999px;
+
+  /* 动画 */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
+
+  /* Z-index */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+
+  /* 断点 */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* 容器 */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+}
+
+/* 主题变量 */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-surface: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card-hover: rgba(248, 250, 252, 0.95);
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-disabled: #94a3b8;
+
+  --border-color: rgba(226, 232, 240, 0.8);
+  --border-hover: rgba(203, 213, 225, 0.8);
+  --border-focus: rgba(59, 130, 246, 0.3);
+}
+
+/* 游戏主题变量 */
+[data-theme="indigo"] {
+  --bg-primary: #1e1b4b;
+  --bg-secondary: #312e81;
+  --color-primary: #818cf8;
+  --color-primary-dark: #6366f1;
+  --color-primary-light: #a5b4fc;
+}
+
+[data-theme="cyan"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #0c4a6e;
+  --color-primary: #06b6d4;
+  --color-primary-dark: #0891b2;
+  --color-primary-light: #22d3ee;
+}
+
+[data-theme="rose"] {
+  --bg-primary: #1f0622;
+  --bg-secondary: #4c1d95;
+  --color-primary: #f472b6;
+  --color-primary-dark: #ec4899;
+  --color-primary-light: #f9a8d4;
+}
+
+[data-theme="amber"] {
+  --bg-primary: #1f1411;
+  --bg-secondary: #92400e;
+  --color-primary: #fbbf24;
+  --color-primary-dark: #f59e0b;
+  --color-primary-light: #fde68a;
+}

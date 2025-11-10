@@ -1,0 +1,39 @@
+{
+  "name": "wellness-hub",
+  "version": "2.0.0",
+  "description": "健康生活管理平台 - Wellness Hub",
+  "main": "public/js/main.js",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.js build",
+    "clean": "node scripts/build.js clean",
+    "serve": "node scripts/build.js serve",
+    "dev": "node scripts/build.js serve",
+    "lint": "eslint src/js --ext .js",
+    "format": "prettier --write src/js src/css",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "health",
+    "wellness",
+    "tracking",
+    "games",
+    "lifestyle",
+    "fitness"
+  ],
+  "author": "Wellness Hub Team",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie <= 11"
+  ]
+}

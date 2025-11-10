@@ -120,6 +120,64 @@
         transform: scale(0.96);
       }
 
+      .switch-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 3.2rem;
+        height: 1.8rem;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .switch-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(148, 163, 184, 0.3);
+        transition: 0.3s ease;
+        border-radius: 2rem;
+      }
+
+      .switch-slider:before {
+        position: absolute;
+        content: "";
+        height: 1.4rem;
+        width: 1.4rem;
+        left: 0.2rem;
+        bottom: 0.2rem;
+        background-color: white;
+        transition: 0.3s ease;
+        border-radius: 50%;
+      }
+
+      .switch input:checked + .switch-slider {
+        background-color: var(--accent);
+      }
+
+      .switch input:focus-visible + .switch-slider {
+        outline: 2px solid rgba(129, 140, 248, 0.6);
+        outline-offset: 2px;
+      }
+
+      .switch input:checked + .switch-slider:before {
+        transform: translateX(1.4rem);
+      }
+
       .controls > button {
         appearance: none;
         border: none;
@@ -171,6 +229,14 @@
         transition: grid-template-columns 0.3s ease, gap 0.3s ease;
         width: 100%;
         touch-action: manipulation;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      .grid-cell {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
       }
 
       .grid[data-size="7"] {
@@ -228,6 +294,17 @@
         background: rgba(129, 140, 248, 0.28);
         color: var(--accent-dark);
         box-shadow: none;
+      }
+
+      .cell.miss {
+        background: rgba(239, 68, 68, 0.3);
+        animation: shake 0.3s ease-in-out;
+      }
+
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-2px); }
+        75% { transform: translateX(2px); }
       }
 
       .message {
@@ -329,6 +406,15 @@
           </div>
           <span id="size-hint">请输入 3 至 9 之间的整数</span>
         </div>
+        <div class="controls-group">
+          <label class="switch-label" for="highlightMode">
+            <span>点击后高亮</span>
+            <div class="switch">
+              <input type="checkbox" id="highlightMode" checked>
+              <span class="switch-slider"></span>
+            </div>
+          </label>
+        </div>
         <button type="button" id="startButton">开始新游戏</button>
       </section>
       <section class="section-card status" aria-live="polite">
@@ -379,6 +465,7 @@
       const startButton = document.getElementById("startButton");
       const targetNumber = document.getElementById("targetNumber");
       const timerDisplay = document.getElementById("timer");
+      const highlightModeInput = document.getElementById("highlightMode");
       const personalRecordsList = document.getElementById("personalRecords");
       const personalStatus = document.getElementById("personalStatus");
       const leaderboardRecordsList = document.getElementById("leaderboardRecords");
@@ -410,6 +497,7 @@
       let startTimestamp = null;
       let currentGridSize = 5;
       let currentUser = null;
+      let gameStarted = false;
 
       function clampSize(size) {
         if (Number.isNaN(size)) return 5;
@@ -708,15 +796,28 @@
       }
 
       function handleCellClick(event) {
+        event.preventDefault();
+
         const button = event.currentTarget;
         const value = Number(button.dataset.value);
+
+        // 检查游戏是否已开始
+        if (!gameStarted) {
+          return;
+        }
+
         if (value === nextNumber) {
           if (nextNumber === 1) {
             startTimer();
           }
-          button.classList.add("found");
+
+          // 根据高亮模式设置样式
+          if (highlightModeInput.checked) {
+            button.classList.add("found");
+          }
           button.disabled = true;
           nextNumber += 1;
+
           if (nextNumber > totalCount) {
             completeGame();
           } else {
@@ -728,7 +829,7 @@
         }
       }
 
-      function createGrid(size) {
+      function createGrid(size, startGame = false) {
         const clampedSize = clampSize(size);
         currentGridSize = clampedSize;
         gridSizeInput.value = clampedSize;
@@ -740,23 +841,31 @@
         );
         totalCount = clampedSize * clampedSize;
         nextNumber = 1;
-        targetNumber.textContent = nextNumber;
+        targetNumber.textContent = startGame ? nextNumber : "点击开始";
         grid.innerHTML = "";
         const fragment = document.createDocumentFragment();
         numbers.forEach((value) => {
           const cellButton = document.createElement("button");
           cellButton.type = "button";
-          cellButton.className = "cell";
-          cellButton.textContent = value;
+          cellButton.className = "cell grid-cell";
+          cellButton.textContent = startGame ? value : "";
           cellButton.dataset.value = value;
           cellButton.setAttribute("role", "gridcell");
+          cellButton.disabled = !startGame;
           cellButton.addEventListener("click", handleCellClick);
+
+          // 添加触摸事件防止滑动
+          cellButton.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+          }, { passive: false });
+
           fragment.appendChild(cellButton);
         });
         grid.appendChild(fragment);
         timerDisplay.textContent = "00:00.0";
         stopTimer();
         startTimestamp = null;
+        gameStarted = startGame;
       }
 
       async function initializeRecords() {
@@ -775,7 +884,7 @@
 
       startButton.addEventListener("click", () => {
         const desiredSize = parseInt(gridSizeInput.value, 10);
-        createGrid(desiredSize);
+        createGrid(desiredSize, true); // 开始游戏时显示数字
       });
 
       const nudgeGridSize = (delta) => {
@@ -783,7 +892,7 @@
         const nextSize = clampSize(currentValue + delta);
         if (nextSize !== currentValue) {
           gridSizeInput.value = nextSize;
-          createGrid(nextSize);
+          createGrid(nextSize, gameStarted); // 保持游戏状态
         } else {
           gridSizeInput.value = nextSize;
         }
@@ -791,13 +900,13 @@
 
       gridSizeInput.addEventListener("change", (event) => {
         const desiredSize = parseInt(event.target.value, 10);
-        createGrid(desiredSize);
+        createGrid(desiredSize, gameStarted);
       });
 
       gridSizeInput.addEventListener("input", (event) => {
         const desiredSize = parseInt(event.target.value, 10);
         if (!Number.isNaN(desiredSize)) {
-          createGrid(desiredSize);
+          createGrid(desiredSize, gameStarted);
         }
       });
 
@@ -808,7 +917,17 @@
         });
       });
 
-      createGrid(parseInt(gridSizeInput.value, 10));
+      // 防止页面滑动的功能
+      function preventPageScroll(event) {
+        if (event.target.closest('.grid')) {
+          event.preventDefault();
+        }
+      }
+
+      // 添加触摸事件监听器防止页面滑动
+      document.addEventListener('touchmove', preventPageScroll, { passive: false });
+
+      createGrid(parseInt(gridSizeInput.value, 10), false); // 初始化时不开始游戏
       initializeRecords();
     </script>
   </body>

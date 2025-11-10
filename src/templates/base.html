@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="{{description}}" />
+  <meta name="keywords" content="{{keywords}}" />
+  <title>{{title}} | Wellness Hub</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/public/css/main.css" />
+
+  <!-- Preconnect to external domains -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="alternate icon" type="image/png" href="/assets/favicon.png" />
+
+  <!-- Theme color -->
+  <meta name="theme-color" content="#0f172a" />
+
+  <!-- Apple touch icon -->
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+
+  {{head}}
+</head>
+<body class="{{bodyClass}}">
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">正在加载...</p>
+  </div>
+
+  <!-- Main Content -->
+  <main id="main-content" class="main-content" style="display: none;">
+    {{content}}
+  </main>
+
+  <!-- Footer -->
+  <footer id="footer" class="footer">
+    <div class="container">
+      <p class="footer-text">
+        © 2024 Wellness Hub. 专注健康，享受生活。
+      </p>
+      <nav class="footer-nav">
+        <a href="/privacy.html" class="footer-link">隐私政策</a>
+        <a href="/terms.html" class="footer-link">使用条款</a>
+        <a href="/about.html" class="footer-link">关于我们</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="/public/js/main.js"></script>
+  {{scripts}}
+
+  <!-- Analytics and third-party scripts -->
+  {{analytics}}
+</body>
+</html>

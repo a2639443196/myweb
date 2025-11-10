@@ -194,17 +194,18 @@ body::before {
 @media (max-width: 520px) {
   body {
     justify-content: flex-start;
-    padding: clamp(0.8rem, 6vw, 1.2rem);
-    padding-bottom: calc(clamp(0.8rem, 6vw, 1.2rem) + env(safe-area-inset-bottom));
+    padding: clamp(0.5rem, 3vw, 0.8rem);
+    padding-bottom: calc(clamp(0.5rem, 3vw, 0.8rem) + env(safe-area-inset-bottom));
   }
 
   .games-shell {
-    border-radius: clamp(18px, 6vw, 24px);
-    padding: clamp(1rem, 6vw, 1.4rem);
+    border-radius: clamp(16px, 4vw, 20px);
+    padding: clamp(0.8rem, 4vw, 1.1rem);
   }
 
   .game-entry {
     grid-template-columns: 1fr;
+    padding: clamp(0.8rem, 3.5vw, 1rem);
   }
 
   .game-entry__icon {
