@@ -1,0 +1,36 @@
+ * Serving Flask app 'app'
+ * Debug mode: off
+/usr/lib64/python3.8/runpy.py:125: RuntimeWarning: 'backend.app' found in sys.modules after import of package 'backend', but prior to execution of 'backend.app'; this may result in unpredictable behaviour
+  warn(RuntimeWarning(msg))
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://172.30.0.9:8000
+[33mPress CTRL+C to quit[0m
+ * Serving Flask app 'app'
+ * Debug mode: off
+/usr/lib64/python3.8/runpy.py:125: RuntimeWarning: 'backend.app' found in sys.modules after import of package 'backend', but prior to execution of 'backend.app'; this may result in unpredictable behaviour
+  warn(RuntimeWarning(msg))
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://172.30.0.9:8000
+[33mPress CTRL+C to quit[0m
+124.126.16.138 - - [03/Nov/2025 14:57:49] "[36mGET / HTTP/1.1[0m" 304 -
+124.126.16.138 - - [03/Nov/2025 14:57:49] "[36mGET /css/nav.css HTTP/1.1[0m" 304 -
+124.126.16.138 - - [03/Nov/2025 14:57:49] "[36mGET /js/nav.js HTTP/1.1[0m" 304 -
+124.126.16.138 - - [03/Nov/2025 14:57:49] "[36mGET /js/util-footer.js HTTP/1.1[0m" 304 -
+124.126.16.138 - - [03/Nov/2025 14:57:49] "GET /api/session HTTP/1.1" 200 -
+124.126.16.138 - - [03/Nov/2025 14:57:49] "[35m[1mPOST /api/session/heartbeat HTTP/1.1[0m" 204 -
+124.126.16.138 - - [03/Nov/2025 14:57:49] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+124.126.16.138 - - [03/Nov/2025 14:57:53] "GET /ws/online HTTP/1.1" 200 -
+124.126.16.138 - - [03/Nov/2025 14:57:53] "GET /ws/online HTTP/1.1" 200 -
+124.126.16.138 - - [03/Nov/2025 14:57:56] "[36mGET / HTTP/1.1[0m" 304 -
+124.126.16.138 - - [03/Nov/2025 14:57:56] "[36mGET /css/nav.css HTTP/1.1[0m" 304 -
+124.126.16.138 - - [03/Nov/2025 14:57:56] "[36mGET /js/util-footer.js HTTP/1.1[0m" 304 -
+124.126.16.138 - - [03/Nov/2025 14:57:56] "[36mGET /js/nav.js HTTP/1.1[0m" 304 -
+124.126.16.138 - - [03/Nov/2025 14:57:56] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+124.126.16.138 - - [03/Nov/2025 14:57:56] "GET /api/session HTTP/1.1" 200 -
+124.126.16.138 - - [03/Nov/2025 14:57:56] "[35m[1mPOST /api/session/heartbeat HTTP/1.1[0m" 204 -
+124.126.16.138 - - [03/Nov/2025 14:58:04] "GET /ws/online HTTP/1.1" 200 -
+124.126.16.138 - - [03/Nov/2025 14:58:05] "[36mGET / HTTP/1.1[0m" 304 -
