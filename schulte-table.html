@@ -278,9 +278,8 @@
         justify-content: center;
         box-shadow: 0 12px 30px -20px rgba(15, 23, 42, 0.55);
         cursor: pointer;
-        transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
         /* 移动端触摸优化 */
-        -webkit-tap-highlight-color: rgba(129, 140, 248, 0.3);
+        -webkit-tap-highlight-color: transparent;
         -webkit-touch-callout: none;
         -webkit-user-select: none;
         user-select: none;
@@ -288,6 +287,18 @@
         /* 增加触摸目标大小 */
         min-height: 44px;
         min-width: 44px;
+      }
+
+      /* 只有未点击的卡片才有过渡效果 */
+      .cell:not(.found):not(.miss) {
+        transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      /* 已点击的卡片（正确或错误）立即响应，无过渡 */
+      .cell.found,
+      .cell.found.highlighted,
+      .cell.miss {
+        transition: none !important;
       }
 
       .cell:focus-visible {
@@ -316,9 +327,9 @@
           transform: scale(0.95);
         }
 
-        /* 正确点击的卡片在移动端不显示任何动画 */
+        /* 移动端正确点击的卡片保持完全无变化 */
         .cell.found:active {
-          background: transparent;
+          background: inherit;
           transform: none;
         }
 
@@ -329,9 +340,9 @@
         }
       }
 
-      /* 桌面端正确点击的卡片不显示点击动画 */
+      /* 桌面端正确点击的卡片保持完全无变化 */
       .cell.found:active {
-        background: transparent;
+        background: inherit;
         transform: none;
       }
 
@@ -342,14 +353,19 @@
       }
 
       .cell.found {
-        box-shadow: none;
-        /* 默认情况下不显示背景色，通过JS动态控制 */
+        background: transparent;
+        color: var(--text-main);
+        box-shadow: 0 12px 30px -20px rgba(15, 23, 42, 0.55);
+        /* 确保正确点击的卡片完全无视觉变化，保持原始阴影 */
+        transform: none;
       }
 
       /* 只有在启用高亮模式时才应用背景色 */
       .cell.found.highlighted {
         background: rgba(129, 140, 248, 0.28);
         color: var(--accent-dark);
+        /* 确保高亮模式下也没有过渡效果 */
+        transition: none !important;
       }
 
       .cell.miss {
@@ -864,12 +880,14 @@
 
         // 确保所有卡片根据当前高亮模式显示正确的状态
         const cells = grid.querySelectorAll('.cell');
+        const isHighlightEnabled = highlightModeInput.checked;
         cells.forEach((cell) => {
           if (cell.disabled) { // 只处理已点击的卡片
-            // 先移除所有状态
-            removeHighlightState(cell);
-            // 根据当前设置重新应用状态
-            applyHighlightState(cell);
+            if (isHighlightEnabled) {
+              cell.classList.add("highlighted");
+            } else {
+              cell.classList.remove("highlighted");
+            }
           }
           // 移除可能存在的错误状态
           cell.classList.remove("miss");
@@ -1106,14 +1124,16 @@
 
       // 高亮模式切换监听器
       highlightModeInput.addEventListener("change", (event) => {
+        const isHighlightEnabled = event.target.checked;
         // 实时更新所有已点击卡片的高亮状态
         const cells = grid.querySelectorAll('.cell');
         cells.forEach((cell) => {
           if (cell.disabled) { // 只处理已点击（禁用）的卡片
-            // 先移除所有状态
-            removeHighlightState(cell);
-            // 根据新的设置重新应用状态
-            applyHighlightState(cell);
+            if (isHighlightEnabled) {
+              cell.classList.add("highlighted");
+            } else {
+              cell.classList.remove("highlighted");
+            }
           }
         });
       });
