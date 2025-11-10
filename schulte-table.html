@@ -295,32 +295,61 @@
         outline-offset: 3px;
       }
 
-      .cell:active {
+      .cell:active:not(.found):not(.miss) {
         transform: scale(0.97);
       }
 
-      /* 移动端触摸反馈 */
-      .cell:hover,
-      .cell:focus {
+      /* 移动端触摸反馈 - 仅对未点击的卡片 */
+      .cell:not(.found):not(.miss):hover,
+      .cell:not(.found):not(.miss):focus {
         background: rgba(129, 140, 248, 0.15);
       }
 
-      /* 移动端特定的触摸状态 */
+      /* 移动端特定的触摸状态 - 仅对未点击且无错误的卡片 */
       @media (hover: none) and (pointer: coarse) {
-        .cell {
+        .cell:not(.found):not(.miss) {
           /* 移除悬停效果在触摸设备上 */
         }
 
-        .cell:active {
+        .cell:not(.found):not(.miss):active {
           background: rgba(129, 140, 248, 0.25);
           transform: scale(0.95);
         }
+
+        /* 正确点击的卡片在移动端不显示任何动画 */
+        .cell.found:active {
+          background: transparent;
+          transform: none;
+        }
+
+        /* 只有在启用高亮模式时，移动端的正确点击卡片才显示背景色 */
+        .cell.found.highlighted:active {
+          background: rgba(129, 140, 248, 0.28);
+          transform: none;
+        }
+      }
+
+      /* 桌面端正确点击的卡片不显示点击动画 */
+      .cell.found:active {
+        background: transparent;
+        transform: none;
+      }
+
+      /* 只有在启用高亮模式时，桌面端的正确点击卡片才显示背景色 */
+      .cell.found.highlighted:active {
+        background: rgba(129, 140, 248, 0.28);
+        transform: none;
       }
 
       .cell.found {
+        box-shadow: none;
+        /* 默认情况下不显示背景色，通过JS动态控制 */
+      }
+
+      /* 只有在启用高亮模式时才应用背景色 */
+      .cell.found.highlighted {
         background: rgba(129, 140, 248, 0.28);
         color: var(--accent-dark);
-        box-shadow: none;
       }
 
       .cell.miss {
@@ -815,7 +844,8 @@
           cell.textContent = cell.dataset.value;
           cell.disabled = false;
           // 移除可能存在的状态类
-          cell.classList.remove("found", "miss");
+          removeHighlightState(cell);
+          cell.classList.remove("miss");
         });
         targetNumber.textContent = nextNumber;
       }
@@ -833,15 +863,13 @@
         gameStarted = false;
 
         // 确保所有卡片根据当前高亮模式显示正确的状态
-        const isHighlightEnabled = highlightModeInput.checked;
         const cells = grid.querySelectorAll('.cell');
         cells.forEach((cell) => {
           if (cell.disabled) { // 只处理已点击的卡片
-            if (isHighlightEnabled) {
-              cell.classList.add("found");
-            } else {
-              cell.classList.remove("found");
-            }
+            // 先移除所有状态
+            removeHighlightState(cell);
+            // 根据当前设置重新应用状态
+            applyHighlightState(cell);
           }
           // 移除可能存在的错误状态
           cell.classList.remove("miss");
@@ -850,6 +878,20 @@
         if (elapsedMs > 0) {
           submitRecord(currentGridSize, elapsedMs);
         }
+      }
+
+      function applyHighlightState(button) {
+        // 根据高亮模式设置正确卡牌的样式
+        if (highlightModeInput.checked) {
+          button.classList.add("found", "highlighted");
+        } else {
+          button.classList.add("found");
+        }
+      }
+
+      function removeHighlightState(button) {
+        // 移除高亮状态
+        button.classList.remove("found", "highlighted");
       }
 
       function handleCellInteraction(button) {
@@ -861,10 +903,8 @@
           // 如果点击的正好是数字1，直接处理
           if (value === nextNumber) {
             startTimer();
-            // 根据当前高亮模式设置样式
-            if (highlightModeInput.checked) {
-              button.classList.add("found");
-            }
+            // 正确点击 - 直接应用正确状态，无动画
+            applyHighlightState(button);
             button.disabled = true;
             nextNumber += 1;
             targetNumber.textContent = nextNumber;
@@ -878,15 +918,13 @@
 
         // 游戏进行中的处理
         if (value === nextNumber) {
-          // 正确点击 - 不显示错误动画
+          // 正确点击 - 直接应用正确状态，无动画
           if (nextNumber === 1) {
             startTimer();
           }
 
-          // 根据当前高亮模式设置样式
-          if (highlightModeInput.checked) {
-            button.classList.add("found");
-          }
+          // 应用正确的状态样式
+          applyHighlightState(button);
           button.disabled = true;
           nextNumber += 1;
 
@@ -1009,7 +1047,8 @@
             cell.textContent = cell.dataset.value;
             cell.disabled = false;
             // 移除可能存在的状态类
-            cell.classList.remove("found", "miss");
+            removeHighlightState(cell);
+            cell.classList.remove("miss");
           });
           targetNumber.textContent = nextNumber;
           gameStarted = true;
@@ -1067,16 +1106,14 @@
 
       // 高亮模式切换监听器
       highlightModeInput.addEventListener("change", (event) => {
-        const isHighlightEnabled = event.target.checked;
         // 实时更新所有已点击卡片的高亮状态
         const cells = grid.querySelectorAll('.cell');
         cells.forEach((cell) => {
           if (cell.disabled) { // 只处理已点击（禁用）的卡片
-            if (isHighlightEnabled) {
-              cell.classList.add("found");
-            } else {
-              cell.classList.remove("found");
-            }
+            // 先移除所有状态
+            removeHighlightState(cell);
+            // 根据新的设置重新应用状态
+            applyHighlightState(cell);
           }
         });
       });
