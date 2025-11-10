@@ -327,9 +327,9 @@
           transform: scale(0.95);
         }
 
-        /* 移动端正确点击的卡片保持完全无变化 */
+        /* 移动端正确点击的卡片保持其当前状态 */
         .cell.found:active {
-          background: inherit;
+          background: rgba(255, 255, 255, 0.1);
           transform: none;
         }
 
@@ -340,9 +340,9 @@
         }
       }
 
-      /* 桌面端正确点击的卡片保持完全无变化 */
+      /* 桌面端正确点击的卡片保持其当前状态 */
       .cell.found:active {
-        background: inherit;
+        background: rgba(255, 255, 255, 0.1);
         transform: none;
       }
 
@@ -353,14 +353,16 @@
       }
 
       .cell.found {
-        background: transparent;
+        /* 无高亮模式下保持卡片的初始样式 */
+        background: rgba(255, 255, 255, 0.1);
         color: var(--text-main);
         box-shadow: 0 12px 30px -20px rgba(15, 23, 42, 0.55);
-        /* 确保正确点击的卡片完全无视觉变化，保持原始阴影 */
+        /* 确保正确点击的卡片无过渡效果 */
         transform: none;
+        transition: none !important;
       }
 
-      /* 只有在启用高亮模式时才应用背景色 */
+      /* 只有在启用高亮模式时才应用特殊的背景色 */
       .cell.found.highlighted {
         background: rgba(129, 140, 248, 0.28);
         color: var(--accent-dark);
