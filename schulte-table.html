@@ -814,6 +814,8 @@
         cells.forEach((cell, index) => {
           cell.textContent = cell.dataset.value;
           cell.disabled = false;
+          // 移除可能存在的状态类
+          cell.classList.remove("found", "miss");
         });
         targetNumber.textContent = nextNumber;
       }
@@ -829,6 +831,22 @@
         targetNumber.textContent = "完成!";
         startTimestamp = null;
         gameStarted = false;
+
+        // 确保所有卡片根据当前高亮模式显示正确的状态
+        const isHighlightEnabled = highlightModeInput.checked;
+        const cells = grid.querySelectorAll('.cell');
+        cells.forEach((cell) => {
+          if (cell.disabled) { // 只处理已点击的卡片
+            if (isHighlightEnabled) {
+              cell.classList.add("found");
+            } else {
+              cell.classList.remove("found");
+            }
+          }
+          // 移除可能存在的错误状态
+          cell.classList.remove("miss");
+        });
+
         if (elapsedMs > 0) {
           submitRecord(currentGridSize, elapsedMs);
         }
@@ -843,7 +861,7 @@
           // 如果点击的正好是数字1，直接处理
           if (value === nextNumber) {
             startTimer();
-            // 根据高亮模式设置样式
+            // 根据当前高亮模式设置样式
             if (highlightModeInput.checked) {
               button.classList.add("found");
             }
@@ -851,19 +869,21 @@
             nextNumber += 1;
             targetNumber.textContent = nextNumber;
           } else {
-            // 点击的不是1，显示错误动画
+            // 点击的不是1，显示错误动画（只有错误的点击才显示红色）
             button.classList.add("miss");
             setTimeout(() => button.classList.remove("miss"), 400);
           }
           return;
         }
 
+        // 游戏进行中的处理
         if (value === nextNumber) {
+          // 正确点击 - 不显示错误动画
           if (nextNumber === 1) {
             startTimer();
           }
 
-          // 根据高亮模式设置样式
+          // 根据当前高亮模式设置样式
           if (highlightModeInput.checked) {
             button.classList.add("found");
           }
@@ -876,6 +896,7 @@
             targetNumber.textContent = nextNumber;
           }
         } else {
+          // 错误点击 - 显示红色错误动画
           button.classList.add("miss");
           setTimeout(() => button.classList.remove("miss"), 400);
         }
@@ -986,8 +1007,12 @@
           const cells = grid.querySelectorAll('.cell');
           cells.forEach((cell) => {
             cell.textContent = cell.dataset.value;
+            cell.disabled = false;
+            // 移除可能存在的状态类
+            cell.classList.remove("found", "miss");
           });
           targetNumber.textContent = nextNumber;
+          gameStarted = true;
         }
       }
 
@@ -1037,6 +1062,22 @@
         button.addEventListener("click", () => {
           const direction = button.dataset.direction === "decrease" ? -1 : 1;
           nudgeGridSize(direction);
+        });
+      });
+
+      // 高亮模式切换监听器
+      highlightModeInput.addEventListener("change", (event) => {
+        const isHighlightEnabled = event.target.checked;
+        // 实时更新所有已点击卡片的高亮状态
+        const cells = grid.querySelectorAll('.cell');
+        cells.forEach((cell) => {
+          if (cell.disabled) { // 只处理已点击（禁用）的卡片
+            if (isHighlightEnabled) {
+              cell.classList.add("found");
+            } else {
+              cell.classList.remove("found");
+            }
+          }
         });
       });
 
