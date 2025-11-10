@@ -102,6 +102,19 @@ function describeActivity(activity) {
         parts.meta = details.mood;
       }
     }
+  } else if (category === 'schulte') {
+    if (action === 'best_record') {
+      const gridSize = Number(details.gridSize) || 0;
+      const elapsedMs = Number(details.elapsedMs) || 0;
+      const sizeText = gridSize ? `${gridSize}×${gridSize}` : '舒尔特表格';
+      const duration = elapsedMs
+        ? `${Math.floor(elapsedMs / 1000)}.${Math.floor((elapsedMs % 1000) / 100)} 秒`
+        : '';
+      parts.summary = `刷新了${sizeText}最佳成绩`;
+      if (duration) {
+        parts.meta = `用时 ${duration}`;
+      }
+    }
   }
 
   if (!parts.meta && details.note) {

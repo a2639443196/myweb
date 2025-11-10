@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>记忆翻牌 | Mini Games</title>
+    <link rel="stylesheet" href="css/mobile-game-shell.css" />
+    <style>
+      body.theme-rose {
+        --surface: rgba(17, 24, 39, 0.76);
+        --surface-strong: rgba(17, 24, 39, 0.92);
+      }
+
+      .app-shell {
+        gap: clamp(1rem, 4vw, 1.6rem);
+      }
+
+      header.page-header {
+        gap: 0.5rem;
+      }
+
+      header.page-header p {
+        max-width: 60ch;
+      }
+
+      .game-panel {
+        display: grid;
+        gap: clamp(0.85rem, 3vw, 1.2rem);
+      }
+
+      .game-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .game-meta__stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+      }
+
+      .pill {
+        background: rgba(236, 72, 153, 0.2);
+        border-radius: 999px;
+        padding: 0.4rem 0.95rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .pill strong {
+        font-size: 1.1rem;
+      }
+
+      .game-meta button {
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--text-main);
+        padding: 0.6rem 1.4rem;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: transform 0.18s ease, background 0.2s ease;
+        box-shadow: 0 20px 40px -25px rgba(236, 72, 153, 0.55);
+      }
+
+      .game-meta button:hover,
+      .game-meta button:focus-visible {
+        outline: none;
+        background: var(--accent-strong);
+        transform: translateY(-1px);
+      }
+
+      .grid {
+        display: grid;
+        gap: clamp(0.65rem, 3vw, 0.95rem);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .card {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: clamp(12px, 3vw, 16px);
+        border: none;
+        background: linear-gradient(160deg, rgba(236, 72, 153, 0.28), rgba(14, 165, 233, 0.22));
+        display: grid;
+        place-items: center;
+        font-size: clamp(1.6rem, 6vw, 2.1rem);
+        font-weight: 700;
+        color: transparent;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        user-select: none;
+      }
+
+      .card[data-state="flipped"],
+      .card[data-state="matched"] {
+        color: var(--text-main);
+        background: rgba(236, 72, 153, 0.26);
+        box-shadow: 0 18px 32px -24px rgba(236, 72, 153, 0.55);
+      }
+
+      .card[data-state="matched"] {
+        background: rgba(34, 197, 94, 0.2);
+        box-shadow: 0 18px 32px -24px rgba(34, 197, 94, 0.5);
+        cursor: default;
+      }
+
+      .card:focus-visible {
+        outline: 3px solid rgba(236, 72, 153, 0.45);
+        outline-offset: 3px;
+      }
+
+      .records-extra {
+        font-size: 0.85rem;
+      }
+
+      .records-item {
+        gap: 0.85rem;
+      }
+
+      @media (max-width: 860px) {
+        .grid {
+          gap: clamp(0.55rem, 4vw, 0.85rem);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .game-meta {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .game-meta button {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .grid {
+          grid-template-columns: repeat(4, minmax(60px, 1fr));
+        }
+      }
+
+      @media (max-width: 480px) {
+        .grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: clamp(0.5rem, 5vw, 0.7rem);
+        }
+
+        .card {
+          font-size: clamp(1.4rem, 8vw, 1.9rem);
+        }
+
+        .records-item {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .records-time,
+        .records-extra {
+          margin-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body class="game-page theme-rose">
+    <main class="app-shell">
+      <a class="nav-back" href="mini-games.html">← 返回小游戏集合</a>
+      <header class="page-header">
+        <p class="badge" aria-hidden="true">记忆与专注双排行</p>
+        <h1>记忆翻牌</h1>
+        <p>
+          快速记忆并匹配所有卡片图案，查看你的完成时间与翻牌次数。完成的成绩会同步到个人战绩和全站排行榜。
+        </p>
+      </header>
+      <section class="section-card game-panel" aria-label="记忆翻牌游戏区域">
+        <div class="game-meta">
+          <div class="game-meta__stats">
+            <span class="pill">用时：<strong id="memoryTimer">00:00</strong></span>
+            <span class="pill">翻牌次数：<strong id="memoryMoves">0</strong></span>
+            <span class="pill">剩余配对：<strong id="memoryPairs">8</strong></span>
+          </div>
+          <button type="button" id="memoryStart">开始新一局</button>
+        </div>
+        <div class="grid" id="memoryGrid" role="grid" aria-label="记忆卡片"></div>
+      </section>
+      <section class="records" aria-label="记忆翻牌成绩">
+        <article class="record-card" aria-labelledby="memory-personal-heading">
+          <div class="record-card__header">
+            <h2 id="memory-personal-heading">个人最佳</h2>
+            <p class="records-status" id="memoryPersonalStatus" data-type="muted">
+              登录后可自动保存最快时间与最少翻牌。
+            </p>
+          </div>
+          <ul
+            class="records-list"
+            id="memoryPersonalRecords"
+            aria-live="polite"
+            aria-busy="true"
+          ></ul>
+        </article>
+        <article class="record-card" aria-labelledby="memory-leaderboard-heading">
+          <div class="record-card__header">
+            <h2 id="memory-leaderboard-heading">全站排行榜</h2>
+            <p class="records-status" id="memoryLeaderboardStatus" data-type="muted">
+              正在加载排行榜…
+            </p>
+          </div>
+          <ul
+            class="records-list"
+            id="memoryLeaderboard"
+            aria-live="polite"
+            aria-busy="true"
+          ></ul>
+        </article>
+      </section>
+    </main>
+    <script>
+      const memoryGrid = document.getElementById("memoryGrid");
+      const memoryTimer = document.getElementById("memoryTimer");
+      const memoryMoves = document.getElementById("memoryMoves");
+      const memoryPairs = document.getElementById("memoryPairs");
+      const memoryStart = document.getElementById("memoryStart");
+      const personalStatus = document.getElementById("memoryPersonalStatus");
+      const personalRecordsList = document.getElementById("memoryPersonalRecords");
+      const leaderboardStatus = document.getElementById("memoryLeaderboardStatus");
+      const leaderboardList = document.getElementById("memoryLeaderboard");
+      const fallbackLeaderboard = [
+        {
+          username: "示例玩家A",
+          elapsedMs: 64000,
+          moves: 34,
+          updatedAt: "2024-03-15T08:30:00Z",
+        },
+        {
+          username: "示例玩家B",
+          elapsedMs: 71500,
+          moves: 36,
+          updatedAt: "2024-02-28T14:20:00Z",
+        },
+        {
+          username: "示例玩家C",
+          elapsedMs: 80200,
+          moves: 38,
+          updatedAt: "2024-01-19T11:05:00Z",
+        },
+      ];
+
+      const icons = [
+        "🍉",
+        "🍋",
+        "🍇",
+        "🍓",
+        "🍒",
+        "🥝",
+        "🍑",
+        "🍍",
+        "🥥",
+        "🍎",
+      ];
+
+      let currentDeck = [];
+      let firstCard = null;
+      let secondCard = null;
+      let lockGrid = false;
+      let moves = 0;
+      let remainingPairs = 0;
+      let startTimestamp = null;
+      let timerInterval = null;
+      let currentUser = null;
+
+      function shuffle(array) {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      function formatTime(ms) {
+        if (!Number.isFinite(ms) || ms <= 0) {
+          return "00:00";
+        }
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+        const seconds = String(totalSeconds % 60).padStart(2, "0");
+        return `${minutes}:${seconds}`;
+      }
+
+      function formatTimePrecise(ms) {
+        if (!Number.isFinite(ms) || ms <= 0) {
+          return "--";
+        }
+        return `${(ms / 1000).toFixed(2)}s`;
+      }
+
+      function formatDateTime(value) {
+        if (!value) return "刚刚";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "刚刚";
+        return date.toLocaleString("zh-CN", {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      function setStatus(element, message, type = "muted") {
+        if (!element) return;
+        element.textContent = message;
+        element.dataset.type = type;
+      }
+
+      function setListBusy(list, busy) {
+        if (!list) return;
+        list.setAttribute("aria-busy", busy ? "true" : "false");
+      }
+
+      function renderPlaceholder(list, message) {
+        list.innerHTML = "";
+        const item = document.createElement("li");
+        item.className = "records-empty";
+        item.textContent = message;
+        list.appendChild(item);
+      }
+
+      function buildDeck() {
+        const selected = shuffle(icons).slice(0, 8);
+        const deck = shuffle([...selected, ...selected]);
+        currentDeck = deck;
+        remainingPairs = selected.length;
+        memoryPairs.textContent = remainingPairs;
+        return deck;
+      }
+
+      function resetTimer() {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        startTimestamp = null;
+        memoryTimer.textContent = "00:00";
+      }
+
+      function startTimer() {
+        startTimestamp = performance.now();
+        timerInterval = setInterval(() => {
+          const elapsed = performance.now() - startTimestamp;
+          memoryTimer.textContent = formatTime(elapsed);
+        }, 200);
+      }
+
+      function stopTimer() {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+      }
+
+      function updateMoves() {
+        memoryMoves.textContent = moves;
+      }
+
+      function createCard(value, index) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "card";
+        button.dataset.state = "hidden";
+        button.dataset.value = value;
+        button.setAttribute("data-index", String(index));
+        button.setAttribute("aria-label", "翻开卡片");
+        button.textContent = value;
+        button.addEventListener("click", () => handleCardClick(button));
+        return button;
+      }
+
+      function renderGrid(deck) {
+        memoryGrid.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        deck.forEach((value, index) => {
+          fragment.append(createCard(value, index));
+        });
+        memoryGrid.append(fragment);
+      }
+
+      function resetState() {
+        firstCard = null;
+        secondCard = null;
+        lockGrid = false;
+        moves = 0;
+        updateMoves();
+        resetTimer();
+      }
+
+      function prepareGame() {
+        resetState();
+        const deck = buildDeck();
+        renderGrid(deck);
+      }
+
+      function startGame() {
+        prepareGame();
+        setStatus(personalStatus, "匹配所有卡片即可记录成绩。", "muted");
+      }
+
+      function revealCard(card) {
+        card.dataset.state = "flipped";
+      }
+
+      function hideCard(card) {
+        card.dataset.state = "hidden";
+      }
+
+      function lockCard(card) {
+        card.dataset.state = "matched";
+        card.setAttribute("aria-label", "已匹配");
+      }
+
+      function handleCardClick(card) {
+        if (lockGrid || card.dataset.state !== "hidden") {
+          return;
+        }
+        if (!startTimestamp) {
+          startTimer();
+        }
+        revealCard(card);
+        if (!firstCard) {
+          firstCard = card;
+          return;
+        }
+        if (card === firstCard) {
+          return;
+        }
+        secondCard = card;
+        lockGrid = true;
+        moves += 1;
+        updateMoves();
+        if (firstCard.dataset.value === secondCard.dataset.value) {
+          lockCard(firstCard);
+          lockCard(secondCard);
+          lockGrid = false;
+          firstCard = null;
+          secondCard = null;
+          remainingPairs -= 1;
+          memoryPairs.textContent = remainingPairs;
+          if (remainingPairs === 0) {
+            completeGame();
+          }
+          return;
+        }
+        setTimeout(() => {
+          hideCard(firstCard);
+          hideCard(secondCard);
+          firstCard = null;
+          secondCard = null;
+          lockGrid = false;
+        }, 700);
+      }
+
+      function completeGame() {
+        stopTimer();
+        const finishedAt = performance.now();
+        const elapsed = startTimestamp ? Math.max(0, finishedAt - startTimestamp) : 0;
+        const payload = {
+          elapsedMs: Math.round(elapsed),
+          moves,
+        };
+        submitRecord(payload.elapsedMs, payload.moves);
+        setStatus(personalStatus, "🎉 恭喜完成配对！成绩已提交。", "success");
+      }
+
+      function renderPersonalRecords(records) {
+        if (!personalRecordsList) return;
+        personalRecordsList.innerHTML = "";
+        if (!records.length) {
+          renderPlaceholder(personalRecordsList, "完成一局后即可保存最佳成绩。");
+          return;
+        }
+        const sorted = [...records].sort((a, b) => {
+          if (a.elapsedMs === b.elapsedMs) {
+            return a.moves - b.moves;
+          }
+          return a.elapsedMs - b.elapsedMs;
+        });
+        sorted.forEach((record, index) => {
+          const item = document.createElement("li");
+          item.className = "records-item";
+          const rank = document.createElement("span");
+          rank.className = "records-rank";
+          rank.textContent = index + 1;
+          const content = document.createElement("div");
+          content.className = "records-content";
+          const label = document.createElement("strong");
+          label.textContent = "最佳配对";
+          const meta = document.createElement("div");
+          meta.className = "records-meta";
+          meta.textContent = `记录于 ${formatDateTime(record.updatedAt || record.createdAt)}`;
+          const time = document.createElement("span");
+          time.className = "records-time";
+          time.textContent = formatTimePrecise(record.elapsedMs);
+          const extra = document.createElement("span");
+          extra.className = "records-extra";
+          extra.textContent = `${record.moves} 次翻牌`;
+          content.append(label, meta);
+          item.append(rank, content, time, extra);
+          personalRecordsList.append(item);
+        });
+      }
+
+      function renderLeaderboard(records) {
+        if (!leaderboardList) return;
+        leaderboardList.innerHTML = "";
+        if (!records.length) {
+          renderPlaceholder(leaderboardList, "暂时没有公开成绩，快来创造纪录！");
+          return;
+        }
+        records.forEach((record, index) => {
+          const item = document.createElement("li");
+          item.className = "records-item";
+          const rank = document.createElement("span");
+          rank.className = "records-rank";
+          rank.textContent = index + 1;
+          const content = document.createElement("div");
+          content.className = "records-content";
+          const name = document.createElement("strong");
+          name.textContent = record.username || "匿名玩家";
+          const meta = document.createElement("div");
+          meta.className = "records-meta";
+          meta.textContent = `更新于 ${formatDateTime(record.updatedAt || record.createdAt)}`;
+          const time = document.createElement("span");
+          time.className = "records-time";
+          time.textContent = formatTimePrecise(record.elapsedMs);
+          const extra = document.createElement("span");
+          extra.className = "records-extra";
+          extra.textContent = `${record.moves} 次翻牌`;
+          content.append(name, meta);
+          item.append(rank, content, time, extra);
+          leaderboardList.append(item);
+        });
+      }
+
+      async function fetchCurrentUser() {
+        try {
+          const response = await fetch("/api/session", { credentials: "include" });
+          if (response.status === 401) {
+            return null;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "无法获取登录状态");
+          }
+          return data.user || null;
+        } catch (error) {
+          throw new Error(error?.message || "无法连接服务器");
+        }
+      }
+
+      async function loadPersonalRecords({ silent = false } = {}) {
+        if (!personalRecordsList) return;
+        if (!currentUser) {
+          renderPlaceholder(personalRecordsList, "登录后即可同步最佳成绩。");
+          if (!silent) {
+            setStatus(personalStatus, "登录后可自动保存最快时间与最少翻牌。", "muted");
+          }
+          return;
+        }
+        if (!silent) {
+          setStatus(personalStatus, "正在加载个人成绩…", "muted");
+        }
+        setListBusy(personalRecordsList, true);
+        try {
+          const response = await fetch("/api/memory-flip/records/me", {
+            credentials: "include",
+          });
+          if (response.status === 401) {
+            currentUser = null;
+            setStatus(personalStatus, "登录后可自动保存最快时间与最少翻牌。", "muted");
+            renderPlaceholder(personalRecordsList, "登录后即可同步最佳成绩。");
+            return;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "获取个人成绩失败");
+          }
+          const records = Array.isArray(data.records) ? data.records : [];
+          renderPersonalRecords(records);
+          if (records.length) {
+            setStatus(personalStatus, "这些是你在不同回合中的最佳表现。", "muted");
+          } else {
+            setStatus(personalStatus, "完成一次游戏即可保存成绩。", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(personalStatus, error.message || "获取个人成绩失败", "error");
+        } finally {
+          setListBusy(personalRecordsList, false);
+        }
+      }
+
+      async function loadLeaderboard({ silent = false } = {}) {
+        if (!leaderboardList) return;
+        if (!silent) {
+          setStatus(leaderboardStatus, "正在加载排行榜…", "muted");
+        }
+        setListBusy(leaderboardList, true);
+        try {
+          const response = await fetch("/api/memory-flip/leaderboard", {
+            credentials: "include",
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "获取排行榜失败");
+          }
+          const records = Array.isArray(data.records) ? data.records : [];
+          renderLeaderboard(records);
+          if (records.length) {
+            setStatus(leaderboardStatus, "展示所有玩家的最佳成绩。", "muted");
+          } else {
+            setStatus(leaderboardStatus, "暂时没有成绩，快来挑战！", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          renderLeaderboard(fallbackLeaderboard);
+          setStatus(
+            leaderboardStatus,
+            "排行榜服务暂不可用，已显示示例数据。",
+            "warning"
+          );
+        } finally {
+          setListBusy(leaderboardList, false);
+        }
+      }
+
+      async function submitRecord(elapsedMs, movesCount) {
+        try {
+          const response = await fetch("/api/memory-flip/records", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ elapsedMs, moves: movesCount }),
+          });
+          if (response.status === 401) {
+            currentUser = null;
+            setStatus(personalStatus, "登录后可保存个人成绩。", "error");
+            renderPlaceholder(personalRecordsList, "登录后即可同步最佳成绩。");
+            return;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "保存成绩失败");
+          }
+          if (data.isNewBest) {
+            setStatus(personalStatus, "🎉 刷新了个人最佳配对成绩！", "success");
+          } else {
+            setStatus(personalStatus, "成绩已记录。", "muted");
+          }
+          await Promise.allSettled([
+            loadPersonalRecords({ silent: true }),
+            loadLeaderboard({ silent: true }),
+          ]);
+        } catch (error) {
+          console.error(error);
+          setStatus(personalStatus, error.message || "保存成绩失败", "error");
+        }
+      }
+
+      memoryStart.addEventListener("click", () => {
+        startGame();
+      });
+
+      async function initialize() {
+        try {
+          currentUser = await fetchCurrentUser();
+        } catch (error) {
+          console.error(error);
+          currentUser = null;
+          setStatus(personalStatus, error.message || "无法获取登录状态", "error");
+        }
+        prepareGame();
+        await Promise.allSettled([
+          loadPersonalRecords({ silent: true }),
+          loadLeaderboard(),
+        ]);
+      }
+
+      initialize();
+    </script>
+  </body>
+</html>

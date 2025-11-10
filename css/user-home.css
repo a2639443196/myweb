@@ -20,6 +20,7 @@ body {
   background: var(--bg);
   color: var(--text-main);
   padding: clamp(1.5rem, 4vw, 3rem) clamp(1.2rem, 6vw, 5rem) 4rem;
+  overflow-x: hidden;
 }
 
 .page {
@@ -201,5 +202,53 @@ body {
 
   .timeline-item__time {
     order: 1;
+  }
+}
+
+@media (max-width: 540px) {
+  .profile {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    border-radius: 20px;
+    padding: 1.2rem;
+  }
+
+  .profile__home {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .timeline {
+    padding: 1.2rem;
+    border-radius: 20px;
+    gap: 1rem;
+  }
+
+  .timeline__header h2 {
+    font-size: 1.2rem;
+  }
+
+  .timeline__list {
+    gap: 0.85rem;
+  }
+
+  .timeline-item {
+    padding: 0.85rem 1rem;
+    border-radius: 16px;
+    gap: 0.6rem;
+  }
+
+  .timeline-item__summary {
+    font-size: 1rem;
+  }
+
+  .empty {
+    padding: 1.5rem 1rem;
+  }
+
+  .empty__card {
+    padding: 1.6rem;
+    border-radius: 20px;
   }
 }

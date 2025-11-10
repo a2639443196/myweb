@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>舒尔特表格游戏</title>
+    <link rel="stylesheet" href="css/mobile-game-shell.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body.theme-indigo {
+        --surface: rgba(17, 24, 39, 0.78);
+        --surface-strong: rgba(17, 24, 39, 0.92);
+        --panel: var(--surface);
+        --text: var(--text-main);
+        --muted: var(--text-muted);
+        --accent-dark: #4f46e5;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+      }
+
+      .app-shell {
+        gap: clamp(1rem, 4vw, 1.6rem);
+      }
+
+      header.page-header {
+        display: grid;
+        gap: 0.55rem;
+      }
+
+      header.page-header p {
+        margin: 0;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+
+      .controls {
+        display: grid;
+        gap: clamp(0.75rem, 3vw, 1.1rem);
+      }
+
+      @media (min-width: 560px) {
+        .controls {
+          grid-template-columns: 1fr auto;
+          align-items: center;
+        }
+      }
+
+      .controls-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        align-items: center;
+      }
+
+      label {
+        font-weight: 600;
+      }
+
+      input[type="number"] {
+        width: 5rem;
+        padding: 0.45rem 0.65rem;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        background: rgba(15, 23, 42, 0.4);
+        color: var(--text-main);
+        font-size: 1rem;
+        text-align: center;
+      }
+
+      .size-control {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        background: rgba(129, 140, 248, 0.18);
+        padding: 0.25rem;
+        gap: 0.3rem;
+      }
+
+      .size-control input[type="number"] {
+        width: 4.5rem;
+        min-width: 3.5rem;
+        border: none;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-main);
+        font-weight: 600;
+        text-align: center;
+        padding: 0.35rem 0.6rem;
+        border-radius: 999px;
+      }
+
+      .size-button {
+        appearance: none;
+        border: none;
+        border-radius: 50%;
+        width: 2.25rem;
+        height: 2.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        font-weight: 700;
+        background: rgba(129, 140, 248, 0.22);
+        color: var(--accent-dark);
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.15s ease;
+      }
+
+      .size-button:hover,
+      .size-button:focus-visible {
+        outline: none;
+        background: rgba(129, 140, 248, 0.35);
+        transform: translateY(-1px);
+      }
+
+      .size-button:active {
+        transform: scale(0.96);
+      }
+
+      .controls > button {
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--text-main);
+        padding: 0.6rem 1.3rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.18s ease, background 0.2s ease;
+        box-shadow: 0 16px 32px -26px rgba(129, 140, 248, 0.6);
+        justify-self: flex-start;
+      }
+
+      .controls > button:hover,
+      .controls > button:focus-visible {
+        outline: none;
+        background: var(--accent-dark);
+        transform: translateY(-1px);
+      }
+
+      .status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+        align-items: center;
+        color: var(--text-main);
+      }
+
+      .status span {
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .status strong {
+        color: var(--accent);
+      }
+
+      .grid-wrapper {
+        display: grid;
+        gap: clamp(0.7rem, 3vw, 1rem);
+      }
+
+      .grid {
+        --grid-size: 5;
+        display: grid;
+        gap: clamp(0.45rem, 3vw, 0.75rem);
+        transition: grid-template-columns 0.3s ease, gap 0.3s ease;
+        width: 100%;
+        touch-action: manipulation;
+      }
+
+      .grid[data-size="7"] {
+        gap: clamp(0.4rem, 3vw, 0.6rem);
+      }
+
+      .grid[data-size="7"] .cell {
+        font-size: clamp(1.15rem, 4.6vw, 1.8rem);
+      }
+
+      .grid[data-size="8"] {
+        gap: clamp(0.32rem, 2.5vw, 0.5rem);
+      }
+
+      .grid[data-size="8"] .cell {
+        font-size: clamp(1rem, 4.2vw, 1.55rem);
+      }
+
+      .grid[data-size="9"] {
+        gap: clamp(0.28rem, 2.2vw, 0.45rem);
+      }
+
+      .grid[data-size="9"] .cell {
+        font-size: clamp(0.9rem, 4vw, 1.35rem);
+      }
+
+      .cell {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        width: 100%;
+        font-size: clamp(1.4rem, 5vw, 2.4rem);
+        border-radius: clamp(8px, 2vw, 14px);
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-main);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 30px -20px rgba(15, 23, 42, 0.55);
+        cursor: pointer;
+        transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .cell:focus-visible {
+        outline: 3px solid rgba(129, 140, 248, 0.45);
+        outline-offset: 3px;
+      }
+
+      .cell:active {
+        transform: scale(0.97);
+      }
+
+      .cell.found {
+        background: rgba(129, 140, 248, 0.28);
+        color: var(--accent-dark);
+        box-shadow: none;
+      }
+
+      .message {
+        margin-top: 0.75rem;
+        font-size: 0.95rem;
+        color: var(--text-muted);
+      }
+
+      .message[data-state="warning"] {
+        color: var(--warning);
+      }
+
+      .message[data-state="error"] {
+        color: var(--danger);
+      }
+
+      .records-item--leaderboard {
+        background: rgba(129, 140, 248, 0.18);
+      }
+
+      .records-item--leaderboard .records-content {
+        flex: 1;
+      }
+
+      .records-item--leaderboard .records-time {
+        color: var(--accent);
+      }
+
+      @media (max-width: 720px) {
+        .controls {
+          grid-template-columns: 1fr;
+        }
+
+        .controls > button {
+          width: 100%;
+        }
+
+        .status {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .grid {
+          gap: clamp(0.35rem, 3.5vw, 0.55rem);
+        }
+
+        .cell {
+          font-size: clamp(1.2rem, 5.5vw, 1.6rem);
+        }
+
+        .size-button {
+          width: 2rem;
+          height: 2rem;
+        }
+      }
+    </style>
+
+  </head>
+  <body class="game-page theme-indigo">
+    <main class="app-shell">
+      <header class="page-header">
+        <h1>舒尔特表格训练</h1>
+        <p>
+          舒尔特表格是一种提升注意力、反应速度和眼睛灵活性的训练方法。请选择合适的表格大小，依次点击从 1 到
+          N 的数字，并尽量在最短时间内完成。
+        </p>
+      </header>
+      <section class="section-card controls" aria-label="游戏设置">
+        <div class="controls-group">
+          <label for="gridSize">表格大小</label>
+          <div class="size-control" role="group" aria-label="表格大小调整">
+            <button
+              type="button"
+              class="size-button"
+              data-direction="decrease"
+              aria-label="减少表格大小"
+            >
+              −
+            </button>
+            <input
+              id="gridSize"
+              type="number"
+              min="3"
+              max="9"
+              value="5"
+              inputmode="numeric"
+              aria-describedby="size-hint"
+            />
+            <button
+              type="button"
+              class="size-button"
+              data-direction="increase"
+              aria-label="增加表格大小"
+            >
+              ＋
+            </button>
+          </div>
+          <span id="size-hint">请输入 3 至 9 之间的整数</span>
+        </div>
+        <button type="button" id="startButton">开始新游戏</button>
+      </section>
+      <section class="section-card status" aria-live="polite">
+        <span>目标数字：<strong id="targetNumber">1</strong></span>
+        <span>用时：<strong id="timer">00:00.0</strong></span>
+      </section>
+      <section class="section-card grid-wrapper">
+        <div class="grid" id="grid" role="grid" aria-label="舒尔特表格"></div>
+      </section>
+      <section class="records" aria-label="舒尔特成绩统计">
+        <article class="record-card" aria-labelledby="personal-heading">
+          <div class="record-card__header">
+            <h2 id="personal-heading">个人成绩</h2>
+            <p class="records-status" id="personalStatus" data-type="muted">
+              登录后可自动保存最佳成绩。
+            </p>
+          </div>
+          <ul
+            class="records-list"
+            id="personalRecords"
+            aria-live="polite"
+            aria-busy="true"
+          ></ul>
+        </article>
+        <article class="record-card" aria-labelledby="leaderboard-heading">
+          <div class="record-card__header">
+            <h2 id="leaderboard-heading">排行榜</h2>
+            <p class="records-status" id="leaderboardStatus" data-type="muted">
+              加载中…
+            </p>
+          </div>
+          <ul
+            class="records-list"
+            id="leaderboardRecords"
+            aria-live="polite"
+            aria-busy="true"
+          ></ul>
+        </article>
+      </section>
+      <footer>
+        小贴士：表格越大难度越高，建议从小尺寸开始逐步提升。若要重新开始，请调整尺寸或点击“开始新游戏”。
+      </footer>
+    </main>
+    <script>
+      const grid = document.getElementById("grid");
+      const gridSizeInput = document.getElementById("gridSize");
+      const sizeButtons = document.querySelectorAll(".size-button");
+      const startButton = document.getElementById("startButton");
+      const targetNumber = document.getElementById("targetNumber");
+      const timerDisplay = document.getElementById("timer");
+      const personalRecordsList = document.getElementById("personalRecords");
+      const personalStatus = document.getElementById("personalStatus");
+      const leaderboardRecordsList = document.getElementById("leaderboardRecords");
+      const leaderboardStatus = document.getElementById("leaderboardStatus");
+      const fallbackLeaderboard = [
+        {
+          username: "示例玩家A",
+          gridSize: 5,
+          elapsedMs: 42500,
+          updatedAt: "2024-04-08T09:30:00Z",
+        },
+        {
+          username: "示例玩家B",
+          gridSize: 6,
+          elapsedMs: 51200,
+          updatedAt: "2024-03-21T12:10:00Z",
+        },
+        {
+          username: "示例玩家C",
+          gridSize: 4,
+          elapsedMs: 36800,
+          updatedAt: "2024-02-14T15:45:00Z",
+        },
+      ];
+
+      let nextNumber = 1;
+      let totalCount = 25;
+      let timerId = null;
+      let startTimestamp = null;
+      let currentGridSize = 5;
+      let currentUser = null;
+
+      function clampSize(size) {
+        if (Number.isNaN(size)) return 5;
+        return Math.min(Math.max(size, 3), 9);
+      }
+
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function formatTime(elapsedMs) {
+        const minutes = Math.floor(elapsedMs / 60000)
+          .toString()
+          .padStart(2, "0");
+        const seconds = Math.floor((elapsedMs % 60000) / 1000)
+          .toString()
+          .padStart(2, "0");
+        const tenths = Math.floor((elapsedMs % 1000) / 100);
+        return `${minutes}:${seconds}.${tenths}`;
+      }
+
+      function formatDateTime(isoString) {
+        if (!isoString) return "刚刚";
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) {
+          return isoString;
+        }
+        return date.toLocaleString("zh-CN", {
+          hour12: false,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      function stopTimer() {
+        if (timerId) {
+          cancelAnimationFrame(timerId);
+          timerId = null;
+        }
+      }
+
+      function updateTimer() {
+        if (!startTimestamp) return;
+        const now = performance.now();
+        timerDisplay.textContent = formatTime(now - startTimestamp);
+        timerId = requestAnimationFrame(updateTimer);
+      }
+
+      function startTimer() {
+        stopTimer();
+        startTimestamp = performance.now();
+        updateTimer();
+      }
+
+      function setStatus(element, message, type = "muted") {
+        if (!element) return;
+        element.textContent = message;
+        element.dataset.type = type;
+      }
+
+      function setListBusy(list, isBusy) {
+        if (!list) return;
+        list.setAttribute("aria-busy", isBusy ? "true" : "false");
+      }
+
+      function renderPlaceholder(list, message) {
+        if (!list) return;
+        list.innerHTML = "";
+        const empty = document.createElement("li");
+        empty.className = "records-empty";
+        empty.textContent = message;
+        list.append(empty);
+      }
+
+      function renderPersonalRecords(records) {
+        if (!personalRecordsList) return;
+        personalRecordsList.innerHTML = "";
+        if (!records.length) {
+          renderPlaceholder(
+            personalRecordsList,
+            currentUser
+              ? "暂无成绩，完成一局后会自动保存最佳成绩。"
+              : "登录后即可保存成绩。"
+          );
+          return;
+        }
+
+        const sorted = [...records].sort((a, b) => a.gridSize - b.gridSize);
+        sorted.forEach((record) => {
+          const item = document.createElement("li");
+          item.className = "records-item";
+          const elapsed = Number(record.elapsedMs) || 0;
+          const bestTime = document.createElement("strong");
+          bestTime.className = "records-time";
+          bestTime.textContent = formatTime(elapsed);
+          const meta = document.createElement("div");
+          meta.className = "records-meta";
+          const updatedText = formatDateTime(record.updatedAt || record.createdAt);
+          meta.textContent = `${record.gridSize} × ${record.gridSize} 表格 · 更新于 ${updatedText}`;
+          item.append(bestTime, meta);
+          personalRecordsList.append(item);
+        });
+      }
+
+      function renderLeaderboard(records) {
+        if (!leaderboardRecordsList) return;
+        leaderboardRecordsList.innerHTML = "";
+        if (!records.length) {
+          renderPlaceholder(leaderboardRecordsList, "暂无成绩，成为第一位挑战者吧。");
+          return;
+        }
+
+        records.forEach((record, index) => {
+          const item = document.createElement("li");
+          item.className = "records-item records-item--leaderboard";
+          const rank = document.createElement("span");
+          rank.className = "records-rank";
+          rank.textContent = index + 1;
+          const content = document.createElement("div");
+          content.className = "records-content";
+          const name = document.createElement("strong");
+          name.textContent = record.username || "匿名用户";
+          const meta = document.createElement("div");
+          meta.className = "records-meta";
+          const updatedText = formatDateTime(record.updatedAt || record.createdAt);
+          meta.textContent = `${record.gridSize} × ${record.gridSize} 表格 · 更新于 ${updatedText}`;
+          content.append(name, meta);
+          const time = document.createElement("span");
+          time.className = "records-time";
+          const elapsed = Number(record.elapsedMs) || 0;
+          time.textContent = formatTime(elapsed);
+          item.append(rank, content, time);
+          leaderboardRecordsList.append(item);
+        });
+      }
+
+      async function fetchCurrentUser() {
+        try {
+          const response = await fetch("/api/session", {
+            credentials: "include",
+          });
+          if (response.status === 401) {
+            return null;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "无法获取登录状态");
+          }
+          return data.user || null;
+        } catch (error) {
+          throw new Error(error?.message || "无法连接服务器");
+        }
+      }
+
+      async function loadPersonalRecords({ silent = false } = {}) {
+        if (!personalRecordsList) return;
+
+        if (!currentUser) {
+          if (!personalStatus || personalStatus.dataset.type !== "error") {
+            setStatus(personalStatus, "登录后可自动保存最佳成绩。", "muted");
+          }
+          renderPlaceholder(personalRecordsList, "登录后即可保存成绩。");
+          setListBusy(personalRecordsList, false);
+          return;
+        }
+
+        if (!silent) {
+          setStatus(personalStatus, "正在加载个人成绩…", "muted");
+        }
+        setListBusy(personalRecordsList, true);
+
+        try {
+          const response = await fetch("/api/schulte/records/me", {
+            credentials: "include",
+          });
+          if (response.status === 401) {
+            currentUser = null;
+            setStatus(personalStatus, "登录后可自动保存最佳成绩。", "muted");
+            renderPlaceholder(personalRecordsList, "登录后即可保存成绩。");
+            return;
+          }
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "获取个人成绩失败");
+          }
+          const records = Array.isArray(data.records) ? data.records : [];
+          renderPersonalRecords(records);
+          if (records.length) {
+            setStatus(personalStatus, "这些是你在不同表格大小下的最佳记录。", "muted");
+          } else {
+            setStatus(personalStatus, "完成一局后会自动保存最佳成绩。", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(personalStatus, error.message || "获取个人成绩失败", "error");
+        } finally {
+          setListBusy(personalRecordsList, false);
+        }
+      }
+
+      async function loadLeaderboard({ silent = false } = {}) {
+        if (!leaderboardRecordsList) return;
+        if (!silent) {
+          setStatus(leaderboardStatus, "加载中…", "muted");
+        }
+        setListBusy(leaderboardRecordsList, true);
+
+        try {
+          const response = await fetch("/api/schulte/leaderboard", {
+            credentials: "include",
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "获取排行榜失败");
+          }
+          const records = Array.isArray(data.records) ? data.records : [];
+          renderLeaderboard(records);
+          if (records.length) {
+            setStatus(leaderboardStatus, "展示所有用户的最快记录。", "muted");
+          } else {
+            setStatus(leaderboardStatus, "暂时没有成绩，快来挑战吧！", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          renderLeaderboard(fallbackLeaderboard);
+          setStatus(
+            leaderboardStatus,
+            "排行榜服务暂不可用，已显示示例数据。",
+            "warning"
+          );
+        } finally {
+          setListBusy(leaderboardRecordsList, false);
+        }
+      }
+
+      async function submitRecord(gridSize, elapsedMs) {
+        try {
+          const response = await fetch("/api/schulte/records", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ gridSize, elapsedMs }),
+          });
+
+          if (response.status === 401) {
+            currentUser = null;
+            setStatus(personalStatus, "登录后可保存个人成绩。", "error");
+            renderPlaceholder(personalRecordsList, "登录后即可保存成绩。");
+            setListBusy(personalRecordsList, false);
+            return;
+          }
+
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.error || "保存成绩失败");
+          }
+
+          if (data.isNewBest) {
+            setStatus(personalStatus, "🎉 刷新了新的最佳成绩！", "success");
+            await Promise.all([
+              loadPersonalRecords({ silent: true }),
+              loadLeaderboard({ silent: true }),
+            ]);
+          } else {
+            setStatus(personalStatus, "完成挑战，但未刷新最佳成绩。", "muted");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(personalStatus, error.message || "保存成绩失败", "error");
+          setListBusy(personalRecordsList, false);
+        }
+      }
+
+      function completeGame() {
+        if (!startTimestamp) {
+          return;
+        }
+        const finishedAt = performance.now();
+        const elapsedMs = Math.max(0, Math.round(finishedAt - startTimestamp));
+        stopTimer();
+        timerDisplay.textContent = formatTime(elapsedMs);
+        targetNumber.textContent = "完成!";
+        startTimestamp = null;
+        if (elapsedMs > 0) {
+          submitRecord(currentGridSize, elapsedMs);
+        }
+      }
+
+      function handleCellClick(event) {
+        const button = event.currentTarget;
+        const value = Number(button.dataset.value);
+        if (value === nextNumber) {
+          if (nextNumber === 1) {
+            startTimer();
+          }
+          button.classList.add("found");
+          button.disabled = true;
+          nextNumber += 1;
+          if (nextNumber > totalCount) {
+            completeGame();
+          } else {
+            targetNumber.textContent = nextNumber;
+          }
+        } else {
+          button.classList.add("miss");
+          setTimeout(() => button.classList.remove("miss"), 400);
+        }
+      }
+
+      function createGrid(size) {
+        const clampedSize = clampSize(size);
+        currentGridSize = clampedSize;
+        gridSizeInput.value = clampedSize;
+        grid.style.gridTemplateColumns = `repeat(${clampedSize}, minmax(0, 1fr))`;
+        grid.style.setProperty("--grid-size", clampedSize);
+        grid.dataset.size = String(clampedSize);
+        const numbers = shuffle(
+          Array.from({ length: clampedSize * clampedSize }, (_, idx) => idx + 1)
+        );
+        totalCount = clampedSize * clampedSize;
+        nextNumber = 1;
+        targetNumber.textContent = nextNumber;
+        grid.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        numbers.forEach((value) => {
+          const cellButton = document.createElement("button");
+          cellButton.type = "button";
+          cellButton.className = "cell";
+          cellButton.textContent = value;
+          cellButton.dataset.value = value;
+          cellButton.setAttribute("role", "gridcell");
+          cellButton.addEventListener("click", handleCellClick);
+          fragment.appendChild(cellButton);
+        });
+        grid.appendChild(fragment);
+        timerDisplay.textContent = "00:00.0";
+        stopTimer();
+        startTimestamp = null;
+      }
+
+      async function initializeRecords() {
+        try {
+          currentUser = await fetchCurrentUser();
+        } catch (error) {
+          console.error(error);
+          currentUser = null;
+          setStatus(personalStatus, error.message || "无法获取登录状态", "error");
+        }
+        await Promise.allSettled([
+          loadPersonalRecords({ silent: true }),
+          loadLeaderboard(),
+        ]);
+      }
+
+      startButton.addEventListener("click", () => {
+        const desiredSize = parseInt(gridSizeInput.value, 10);
+        createGrid(desiredSize);
+      });
+
+      const nudgeGridSize = (delta) => {
+        const currentValue = parseInt(gridSizeInput.value, 10) || currentGridSize;
+        const nextSize = clampSize(currentValue + delta);
+        if (nextSize !== currentValue) {
+          gridSizeInput.value = nextSize;
+          createGrid(nextSize);
+        } else {
+          gridSizeInput.value = nextSize;
+        }
+      };
+
+      gridSizeInput.addEventListener("change", (event) => {
+        const desiredSize = parseInt(event.target.value, 10);
+        createGrid(desiredSize);
+      });
+
+      gridSizeInput.addEventListener("input", (event) => {
+        const desiredSize = parseInt(event.target.value, 10);
+        if (!Number.isNaN(desiredSize)) {
+          createGrid(desiredSize);
+        }
+      });
+
+      sizeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const direction = button.dataset.direction === "decrease" ? -1 : 1;
+          nudgeGridSize(direction);
+        });
+      });
+
+      createGrid(parseInt(gridSizeInput.value, 10));
+      initializeRecords();
+    </script>
+  </body>
+</html>
