@@ -780,7 +780,18 @@
         }
       }
 
-      function completeGame() {
+      function startGame() {
+        gameStarted = true;
+        // 显示所有卡片上的数字
+        const cells = grid.querySelectorAll('.cell');
+        cells.forEach((cell, index) => {
+          cell.textContent = cell.dataset.value;
+          cell.disabled = false;
+        });
+        targetNumber.textContent = nextNumber;
+      }
+
+    function completeGame() {
         if (!startTimestamp) {
           return;
         }
@@ -790,6 +801,7 @@
         timerDisplay.textContent = formatTime(elapsedMs);
         targetNumber.textContent = "完成!";
         startTimestamp = null;
+        gameStarted = false;
         if (elapsedMs > 0) {
           submitRecord(currentGridSize, elapsedMs);
         }
@@ -801,8 +813,24 @@
         const button = event.currentTarget;
         const value = Number(button.dataset.value);
 
-        // 检查游戏是否已开始
+        // 如果游戏未开始，点击任意卡片开始游戏
         if (!gameStarted) {
+          startGame();
+          // 如果点击的正好是数字1，直接处理
+          if (value === nextNumber) {
+            startTimer();
+            // 根据高亮模式设置样式
+            if (highlightModeInput.checked) {
+              button.classList.add("found");
+            }
+            button.disabled = true;
+            nextNumber += 1;
+            targetNumber.textContent = nextNumber;
+          } else {
+            // 点击的不是1，显示错误动画
+            button.classList.add("miss");
+            setTimeout(() => button.classList.remove("miss"), 400);
+          }
           return;
         }
 
@@ -841,17 +869,17 @@
         );
         totalCount = clampedSize * clampedSize;
         nextNumber = 1;
-        targetNumber.textContent = startGame ? nextNumber : "点击开始";
+        targetNumber.textContent = "点击任意卡片开始";
         grid.innerHTML = "";
         const fragment = document.createDocumentFragment();
         numbers.forEach((value) => {
           const cellButton = document.createElement("button");
           cellButton.type = "button";
           cellButton.className = "cell grid-cell";
-          cellButton.textContent = startGame ? value : "";
+          cellButton.textContent = ""; // 初始不显示数字
           cellButton.dataset.value = value;
           cellButton.setAttribute("role", "gridcell");
-          cellButton.disabled = !startGame;
+          cellButton.disabled = false; // 初始启用，可以点击开始游戏
           cellButton.addEventListener("click", handleCellClick);
 
           // 添加触摸事件防止滑动
@@ -866,6 +894,16 @@
         stopTimer();
         startTimestamp = null;
         gameStarted = startGame;
+
+        // 如果是开始游戏状态，显示数字
+        if (startGame) {
+          // 显示所有卡片上的数字
+          const cells = grid.querySelectorAll('.cell');
+          cells.forEach((cell) => {
+            cell.textContent = cell.dataset.value;
+          });
+          targetNumber.textContent = nextNumber;
+        }
       }
 
       async function initializeRecords() {
