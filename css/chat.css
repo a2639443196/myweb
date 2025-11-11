@@ -81,6 +81,128 @@ body::before {
     border-radius: 3px;
 }
 
+/* 头部样式 */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(1rem, 4vw, 1.5rem) clamp(1.25rem, 5vw, 2rem);
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--chat-surface-border);
+    border-radius: clamp(20px, 5vw, 26px) clamp(20px, 5vw, 26px) 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 4px 20px -8px rgba(0, 0, 0, 0.3);
+}
+
+.header__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: clamp(0.6rem, 2.5vw, 0.8rem) clamp(1rem, 4vw, 1.2rem);
+    border-radius: 20px;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    background: var(--chat-accent-soft);
+    color: var(--chat-text-main);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: clamp(0.9rem, 3vw, 1rem);
+    transition: all 0.2s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.header__back:hover {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: var(--chat-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px -8px rgba(56, 189, 248, 0.4);
+    color: var(--chat-text-main);
+    text-decoration: none;
+}
+
+.header__back:active {
+    transform: translateY(-1px);
+}
+
+.header__title {
+    margin: 0;
+    font-size: clamp(1.3rem, 5vw, 1.8rem);
+    font-weight: 700;
+    color: var(--chat-text-main);
+    text-align: center;
+    letter-spacing: 0.02em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    flex: 1;
+    padding: 0 1rem;
+}
+
+.header__meta {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.75rem, 3vw, 1rem);
+    font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+}
+
+.header__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 15px;
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    font-weight: 600;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.header__status::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: pulse 2s infinite;
+}
+
+.header__status.online {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.header__status.online::before {
+    background: #22c55e;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.header__user-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 15px;
+    background: var(--chat-accent-soft);
+    color: var(--chat-accent);
+    font-weight: 600;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.header__user-count::before {
+    content: '👥';
+    font-size: 1em;
+}
+
 .chat-messages {
     list-style: none;
     padding: 0;
@@ -262,6 +384,72 @@ body::before {
     }
 }
 
+/* 移动端适配 */
+@media (max-width: 640px) {
+    .header {
+        padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 1.25rem);
+        border-radius: clamp(16px, 4vw, 20px) clamp(16px, 4vw, 20px) 0 0;
+    }
+
+    .header__back {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.85rem;
+        gap: 0.3rem;
+    }
+
+    .header__title {
+        font-size: 1.2rem;
+        padding: 0 0.5rem;
+    }
+
+    .header__meta {
+        gap: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .header__status,
+    .header__user-count {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+    }
+
+    .chat-main {
+        margin: clamp(0.5rem, 2vw, 0.75rem);
+        border-radius: clamp(16px, 4vw, 20px);
+    }
+}
+
+/* 超小屏幕适配 */
+@media (max-width: 380px) {
+    .header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.75rem;
+    }
+
+    .header__back {
+        order: 1;
+        flex: 0 0 auto;
+    }
+
+    .header__title {
+        order: 3;
+        flex: 1 1 100%;
+        padding: 0.25rem 0;
+        font-size: 1.1rem;
+        text-align: center;
+    }
+
+    .header__meta {
+        order: 2;
+        flex: 0 0 auto;
+    }
+
+    .header__user-count::before {
+        content: '👤';
+    }
+}
+
 /* 移动端键盘适配 */
 @media (max-height: 600px) and (orientation: landscape) {
     .chat-form {
@@ -274,5 +462,9 @@ body::before {
 
     .chat-message {
         padding: clamp(0.5rem, 2vw, 0.75rem) clamp(0.75rem, 3vw, 1rem);
+    }
+
+    .header {
+        padding: clamp(0.5rem, 2vw, 0.75rem);
     }
 }

@@ -25,7 +25,21 @@ class ChatPage extends BasePage {
             this.showEmptyState('请先登录再进入聊天室。');
             return;
         }
+
+        // 初始化头部状态显示
+        this.updateConnectionStatus('offline');
+
         this.ws.onmessage = this.handleSocketMessage.bind(this);
+        this.ws.onopen = () => {
+            this.updateConnectionStatus('online');
+        };
+        this.ws.onclose = () => {
+            this.updateConnectionStatus('offline');
+        };
+        this.ws.onerror = () => {
+            this.updateConnectionStatus('offline');
+        };
+
         this.initForm();
     }
 
@@ -138,6 +152,19 @@ class ChatPage extends BasePage {
 
     updateUserCount(users) {
         this.elements.userCount.textContent = users.length;
+    }
+
+    updateConnectionStatus(status) {
+        const statusElement = document.querySelector('[data-role="ws-status"]');
+        if (!statusElement) return;
+
+        if (status === 'online') {
+            statusElement.textContent = '在线';
+            statusElement.classList.add('online');
+        } else {
+            statusElement.textContent = '离线';
+            statusElement.classList.remove('online');
+        }
     }
 
     scrollToBottom() {
