@@ -40,13 +40,15 @@ body::before {
 .page {
     position: relative;
     z-index: 1;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .chat-main {
-    flex-grow: 1;
+    flex: 1;
     display: flex;
     flex-direction: column;
     background: var(--chat-bg);
@@ -56,16 +58,18 @@ body::before {
     box-shadow: 0 32px 60px -36px var(--chat-glow);
     margin: clamp(0.75rem, 4vw, 1.25rem);
     overflow: hidden;
+    min-height: 0;
 }
 
 .chat-container {
-    flex-grow: 1;
+    flex: 1;
     overflow-y: auto;
     padding: clamp(1rem, 4vw, 1.5rem);
     display: flex;
     flex-direction: column;
     scrollbar-width: thin;
     scrollbar-color: var(--chat-accent-soft) transparent;
+    min-height: 0;
 }
 
 .chat-container::-webkit-scrollbar {
