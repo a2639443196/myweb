@@ -20,6 +20,86 @@ ONLINE_THRESHOLD_SECONDS = 60
 ONLINE_BROADCAST_INTERVAL = 10
 
 
+class ChatManager:
+    def __init__(self) -> None:
+        self._clients: dict[Any, str] = {}
+        self._lock = threading.Lock()
+
+    def register(self, ws: Any, username: str) -> None:
+        with self._lock:
+            self._clients[ws] = username
+        self.broadcast_user_list()
+        self._send_history(ws)
+        self.broadcast_system_message(f"用户 {username} 加入了聊天室")
+
+    def unregister(self, ws: Any) -> None:
+        username = None
+        with self._lock:
+            if ws in self._clients:
+                username = self._clients.pop(ws)
+        if username:
+            self.broadcast_user_list()
+            self.broadcast_system_message(f"用户 {username} 离开了聊天室")
+
+    def broadcast_user_list(self) -> None:
+        with self._lock:
+            users = list(self._clients.values())
+        self.broadcast({
+            "type": "user_list",
+            "payload": {"users": users},
+        })
+
+    def broadcast_message(self, message: Dict[str, Any]) -> None:
+        self.broadcast({
+            "type": "chat_message",
+            "payload": message,
+        })
+
+    def broadcast_system_message(self, text: str) -> None:
+        message = {
+            "text": text,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        self.broadcast({
+            "type": "system_message",
+            "payload": message,
+        })
+
+    def broadcast(self, data: Dict[str, Any]) -> None:
+        with self._lock:
+            clients = list(self._clients.keys())
+        if not clients:
+            return
+
+        payload = self._serialize(data)
+        stale: list[Any] = []
+
+        for ws in clients:
+            try:
+                ws.send(payload)
+            except Exception:
+                stale.append(ws)
+
+        if stale:
+            with self._lock:
+                for ws in stale:
+                    self._clients.pop(ws, None)
+
+    def _send_history(self, ws: Any) -> None:
+        try:
+            history = [serialize_chat_message(msg) for msg in list_chat_messages()]
+            ws.send(self._serialize({
+                "type": "chat_history",
+                "payload": history,
+            }))
+        except Exception:
+            self.unregister(ws)
+
+    @staticmethod
+    def _serialize(payload: Dict[str, Any]) -> str:
+        return json.dumps(payload, ensure_ascii=False)
+
+
 class OnlineUserNotifier:
     def __init__(self, fetch_users: Callable[[], list[Dict[str, Any]]], interval: int = ONLINE_BROADCAST_INTERVAL) -> None:
         self._fetch_users = fetch_users
@@ -92,6 +172,8 @@ class OnlineUserNotifier:
 
 
 online_user_notifier: Optional[OnlineUserNotifier] = None
+chat_manager = ChatManager()
+
 
 def notify_online_users_change() -> None:
     if online_user_notifier is not None:
@@ -634,6 +716,37 @@ def create_app() -> Flask:
         finally:
             online_user_notifier.unregister(ws)
 
+    @sock.route("/ws/chat")
+    def chat_socket(ws: Any) -> None:
+        account = get_current_account()
+        if not account:
+            return
+
+        username = account["username"]
+        chat_manager.register(ws, username)
+
+        try:
+            while True:
+                try:
+                    message = ws.receive()
+                except Exception:
+                    break
+                if message is None:
+                    break
+
+                try:
+                    data = json.loads(message)
+                    if data.get("type") == "chat_message":
+                        text = data.get("payload", {}).get("text", "").strip()
+                        if text:
+                            msg = create_chat_message(account_id=account["id"], text=text)
+                            full_msg = {**msg, "username": username}
+                            chat_manager.broadcast_message(serialize_chat_message(full_msg))
+                except (json.JSONDecodeError, AttributeError):
+                    continue
+        finally:
+            chat_manager.unregister(ws)
+
     @app.route("/", defaults={"path": "index.html"})
     @app.route("/<path:path>")
     def serve_frontend(path: str) -> Any:
@@ -777,6 +890,17 @@ def init_db(database_path: Path) -> None:
         )
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_sudoku_records_elapsed ON sudoku_records(elapsed_ms)"
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                account_id INTEGER NOT NULL,
+                text TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+            )
+            """
         )
         connection.commit()
 
@@ -1480,6 +1604,48 @@ def list_sudoku_leaderboard(limit: int = 20) -> list[Dict[str, Any]]:
             (limit,),
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def create_chat_message(account_id: int, text: str) -> Dict[str, Any]:
+    timestamp = datetime.now(timezone.utc).isoformat()
+    with get_db_connection() as connection:
+        cursor = connection.execute(
+            "INSERT INTO chat_messages (account_id, text, created_at) VALUES (?, ?, ?)",
+            (account_id, text, timestamp),
+        )
+        message_id = cursor.lastrowid
+        connection.commit()
+
+    return {
+        "id": message_id,
+        "account_id": account_id,
+        "text": text,
+        "created_at": timestamp,
+    }
+
+
+def list_chat_messages(limit: int = 50) -> list[Dict[str, Any]]:
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT cm.id, cm.account_id, cm.text, cm.created_at, a.username
+            FROM chat_messages cm
+            JOIN accounts a ON cm.account_id = a.id
+            ORDER BY cm.created_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+    return [dict(row) for row in reversed(rows)]
+
+
+def serialize_chat_message(message: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "id": message.get("id"),
+        "sender": message.get("username"),
+        "text": message.get("text"),
+        "timestamp": message.get("created_at"),
+    }
 
 
 def get_current_account() -> Optional[Dict[str, Any]]:

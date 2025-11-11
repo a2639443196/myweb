@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>聊天室 | Wellness Hub</title>
+    <link rel="stylesheet" href="css/mobile-game-shell.css" />
+    <link rel="stylesheet" href="css/chat.css" />
+</head>
+<body>
+<div class="page" data-role="page" hidden>
+    <header class="header">
+        <a href="index.html" class="header__back">← 返回</a>
+        <h1 class="header__title">实时聊天室</h1>
+        <div class="header__meta">
+            <span class="header__status" data-role="ws-status">离线</span>
+            <span class="header__user-count" data-role="user-count">0</span>
+        </div>
+    </header>
+
+    <main class="chat-main">
+        <div class="chat-container">
+            <ul class="chat-messages" data-role="chat-messages" aria-live="polite"></ul>
+            <div class="chat-user-list" data-role="user-list"></div>
+        </div>
+
+        <form class="chat-form" data-role="chat-form">
+            <input
+                    type="text"
+                    class="chat-form__input"
+                    data-role="chat-input"
+                    placeholder="输入消息..."
+                    autocomplete="off"
+                    required
+            />
+            <button type="submit" class="chat-form__submit">发送</button>
+        </form>
+    </main>
+</div>
+
+<section class="empty" data-role="empty-state" hidden>
+    <div class="empty__card">
+        <h1>无法进入聊天室</h1>
+        <p data-role="empty-message"></p>
+        <a class="empty__home" href="index.html">返回首页</a>
+    </div>
+</section>
+
+<template id="message-template">
+    <li class="chat-message" data-sender="">
+        <p class="chat-message__content"></p>
+        <span class="chat-message__meta"></span>
+    </li>
+</template>
+
+<script type="module" src="js/chat.js"></script>
+</body>
+</html>
