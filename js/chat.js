@@ -93,6 +93,11 @@ class ChatPage extends BasePage {
             },
         };
         this.ws.send(JSON.stringify(payload));
+
+        // 发送消息后立即滚动到底部
+        requestAnimationFrame(() => {
+            this.scrollToBottom();
+        });
     }
 
     handleSocketMessage(event) {
@@ -223,8 +228,11 @@ class ChatPage extends BasePage {
     }
 
     scrollToBottom() {
-        // 滚动到底部
-        this.elements.messages.scrollTop = this.elements.messages.scrollHeight;
+        // 滚动聊天容器到底部
+        const chatContainer = document.querySelector('.chat-container');
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
     }
 
     renderMessage(message, isHistory = false) {
