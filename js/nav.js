@@ -56,6 +56,9 @@ const logoutButton = document.querySelector('[data-role="logout"]');
 const protectedAreas = Array.from(document.querySelectorAll('[data-role="protected-area"]'));
 const onlineSection = document.querySelector('[data-role="online-users"]');
 const onlineList = onlineSection?.querySelector('[data-role="online-user-list"]') ?? null;
+const onlineButton = document.querySelector('[data-role="online-users-button"]');
+const onlineButtonCount = document.querySelector('[data-role="online-users-count"]');
+const onlineModal = document.querySelector('[data-role="online-users-modal"]');
 
 const state = {
   user: null,
@@ -224,19 +227,35 @@ const renderUserBanner = () => {
 };
 
 const renderOnlineUsers = (users) => {
+  // 更新按钮显示的用户数量
+  if (onlineButtonCount) {
+    const onlineCount = users.filter(user => user.online).length;
+    const totalCount = users.length;
+    onlineButtonCount.textContent = `${onlineCount} 位在线 / 共 ${totalCount} 位用户`;
+  }
+
   if (!onlineList) return;
   onlineList.innerHTML = '';
 
   if (!users.length) {
-    const empty = document.createElement('li');
+    const empty = document.createElement('div');
     empty.className = 'online-users__empty';
     empty.textContent = '暂无注册用户';
     onlineList.append(empty);
     return;
   }
 
-  users.forEach((user) => {
-    const item = document.createElement('li');
+  // 排序：在线用户优先，然后按用户名排序
+  const sortedUsers = [...users].sort((a, b) => {
+    // 在线状态优先
+    if (a.online && !b.online) return -1;
+    if (!a.online && b.online) return 1;
+    // 相同状态按用户名排序
+    return a.username.localeCompare(b.username, 'zh-CN');
+  });
+
+  sortedUsers.forEach((user) => {
+    const item = document.createElement('div');
     item.className = 'online-users__item';
 
     const link = document.createElement('a');
@@ -574,6 +593,34 @@ if (loginModal && registerModal && userBanner) {
       handleSessionExpired();
     }
   });
+
+  // 在线用户弹窗事件处理
+  if (onlineButton && onlineModal) {
+    // 点击按钮打开弹窗
+    onlineButton.addEventListener('click', () => {
+      onlineModal.hidden = false;
+    });
+
+    // 点击遮罩层或关闭按钮关闭弹窗
+    const closeElements = Array.from(onlineModal.querySelectorAll('[data-role="online-users-modal-close"]'));
+    closeElements.forEach(element => {
+      element.addEventListener('click', () => {
+        onlineModal.hidden = true;
+      });
+    });
+
+    // 点击弹窗内部阻止关闭
+    onlineModal.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    // ESC键关闭弹窗
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !onlineModal.hidden) {
+        onlineModal.hidden = true;
+      }
+    });
+  }
 
   loadSession();
 }

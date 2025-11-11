@@ -22,6 +22,19 @@ class ChatPage extends BasePage {
 
         // 存储当前用户列表
         this.currentUserList = [];
+
+        // 添加页面卸载事件监听
+        window.addEventListener('beforeunload', () => {
+            this.disconnectWebSocket();
+        });
+
+        // 添加页面可见性变化监听
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && (!this.ws || this.ws.readyState !== WebSocket.OPEN)) {
+                // 页面重新可见且WebSocket未连接时，尝试重连
+                this.connectWebSocket();
+            }
+        });
     }
 
     async init() {
@@ -156,6 +169,8 @@ class ChatPage extends BasePage {
         // 点击用户计数按钮打开弹窗
         this.elements.userCount.addEventListener('click', () => {
             this.showUserModal();
+            // 请求最新的用户列表
+            this.requestUserList();
         });
 
         // 点击遮罩层或关闭按钮关闭弹窗
@@ -214,7 +229,46 @@ class ChatPage extends BasePage {
         this.elements.userListContent.innerHTML = `<div class="user-list">${userItems}</div>`;
     }
 
-    updateConnectionStatus(status) {
+    requestUserList() {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            const payload = {
+                type: 'get_user_list',
+                payload: {}
+            };
+            this.ws.send(JSON.stringify(payload));
+        } else {
+            // 如果WebSocket未连接，尝试从API获取在线用户
+            this.fetchOnlineUsers();
+        }
+    }
+
+  fetchOnlineUsers() {
+    // 显示加载中状态
+    if (this.elements.userListContent) {
+        this.elements.userListContent.innerHTML = '<div class="user-list__loading">加载中...</div>';
+    }
+
+    fetch('/api/online-users', {
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.users && Array.isArray(data.users)) {
+            this.currentUserList = data.users;
+            this.renderUserList();
+        } else {
+            throw new Error('无效的用户数据格式');
+        }
+    })
+    .catch(error => {
+        console.error('获取在线用户列表失败:', error);
+        if (this.elements.userListContent) {
+            this.elements.userListContent.innerHTML = '<div class="user-list__empty">无法加载用户列表</div>';
+        }
+    });
+  }
+
+  updateConnectionStatus(status) {
         const statusElement = document.querySelector('[data-role="ws-status"]');
         if (!statusElement) return;
 

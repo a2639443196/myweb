@@ -53,23 +53,83 @@ export class BasePage {
     }
 
     initWebSocket() {
+        this.shouldReconnect = true;
+        this.reconnectTimer = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 10;
+        this.reconnectDelay = 3000;
+
+        this.connectWebSocket();
+    }
+
+    connectWebSocket() {
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const wsUrl = `${protocol}://${window.location.host}/ws/${this.options.name.toLowerCase()}`;
 
-        this.ws = new WebSocket(wsUrl);
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+
+        try {
+            this.ws = new WebSocket(wsUrl);
+        } catch (error) {
+            console.error('Failed to create WebSocket:', error);
+            this.scheduleReconnect();
+            return;
+        }
 
         this.ws.onopen = () => {
-            if (this.elements.wsStatus) this.elements.wsStatus.textContent = '在线';
+            this.reconnectAttempts = 0;
+            if (this.elements.wsStatus) {
+                this.elements.wsStatus.textContent = '在线';
+                this.elements.wsStatus.classList.add('online');
+            }
+            console.log(`${this.options.name} WebSocket connected`);
         };
 
-        this.ws.onclose = () => {
-            if (this.elements.wsStatus) this.elements.wsStatus.textContent = '离线';
+        this.ws.onclose = (event) => {
+            if (this.elements.wsStatus) {
+                this.elements.wsStatus.textContent = '离线';
+                this.elements.wsStatus.classList.remove('online');
+            }
+
+            if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+                this.scheduleReconnect();
+            }
+
+            console.log(`${this.options.name} WebSocket disconnected`, event);
         };
 
         this.ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
+            console.error(`${this.options.name} WebSocket error:`, error);
         };
 
         this.ws.handlers = {};
+    }
+
+    scheduleReconnect() {
+        if (!this.shouldReconnect || this.reconnectTimer) return;
+
+        const delay = this.reconnectDelay * Math.pow(1.5, Math.min(this.reconnectAttempts, 5));
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = null;
+            this.reconnectAttempts++;
+            console.log(`Attempting to reconnect ${this.options.name} WebSocket (attempt ${this.reconnectAttempts})`);
+            this.connectWebSocket();
+        }, delay);
+    }
+
+    disconnectWebSocket() {
+        this.shouldReconnect = false;
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+
+        if (this.ws) {
+            this.ws.close(1000, 'User disconnected');
+            this.ws = null;
+        }
     }
 }

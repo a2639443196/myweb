@@ -38,7 +38,10 @@
       <h2>实时在线用户</h2>
       <p class="online-users__hint">状态通过实时连接自动更新</p>
     </div>
-    <ul class="online-users__list" data-role="online-user-list" aria-live="polite"></ul>
+    <button class="online-users__button" data-role="online-users-button">
+      <span class="online-users__button-text" data-role="online-users-count">加载中...</span>
+      <span class="online-users__button-icon">👥</span>
+    </button>
   </section>
   <div class="auth-modal" data-role="login-modal" hidden>
     <div
@@ -191,6 +194,20 @@
       </a>
     </div>
   </main>
+  <!-- 在线用户弹窗 -->
+  <div class="online-users-modal" data-role="online-users-modal" hidden>
+    <div class="online-users-modal__overlay" data-role="online-users-modal-close"></div>
+    <div class="online-users-modal__dialog">
+      <div class="online-users-modal__header">
+        <h3 class="online-users-modal__title">在线用户列表</h3>
+        <button class="online-users-modal__close" data-role="online-users-modal-close" aria-label="关闭">×</button>
+      </div>
+      <div class="online-users-modal__content">
+        <div class="online-users__list" data-role="online-user-list" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
   <footer data-role="protected-area" hidden>
     © <span id="currentYear"></span> Wellness Hub · 拥抱健康生活方式。
   </footer>
