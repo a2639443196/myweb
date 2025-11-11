@@ -35,12 +35,26 @@ class ChatPage extends BasePage {
             this.submitMessage();
         });
 
+        // PC端Enter键发送，移动端使用按钮发送
         this.elements.input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            // 检测是否为移动设备
+            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 640;
+
+            if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
                 e.preventDefault();
                 this.submitMessage();
             }
         });
+
+        // 为移动端优化输入体验
+        if (window.innerWidth <= 640) {
+            this.elements.input.addEventListener('focus', () => {
+                // 聚焦时滚动到底部
+                setTimeout(() => {
+                    this.scrollToBottom();
+                }, 300);
+            });
+        }
     }
 
     submitMessage() {
@@ -124,6 +138,37 @@ class ChatPage extends BasePage {
 
     updateUserCount(users) {
         this.elements.userCount.textContent = users.length;
+    }
+
+    scrollToBottom() {
+        // 由于使用了 flex-direction: column-reverse，需要滚动到顶部
+        this.elements.messages.scrollTop = 0;
+    }
+
+    renderMessage(message, isHistory = false) {
+        const messageElement = this.createMessageElement(message);
+        if (isHistory) {
+            this.elements.messages.appendChild(messageElement);
+        } else {
+            this.elements.messages.prepend(messageElement);
+            // 新消息添加后短暂延迟滚动到底部
+            requestAnimationFrame(() => {
+                this.scrollToBottom();
+            });
+        }
+    }
+
+    renderSystemMessage(message) {
+        const messageData = {
+            ...message,
+            sender: 'system',
+        };
+        const messageElement = this.createMessageElement(messageData);
+        this.elements.messages.prepend(messageElement);
+        // 系统消息添加后短暂延迟滚动到底部
+        requestAnimationFrame(() => {
+            this.scrollToBottom();
+        });
     }
 }
 
