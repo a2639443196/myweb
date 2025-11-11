@@ -1,5 +1,6 @@
 // /js/chat.js
 import { BasePage } from './components/BasePage.js';
+import { UserModal } from './components/UserModal.js';
 
 class ChatPage extends BasePage {
     constructor() {
@@ -16,12 +17,16 @@ class ChatPage extends BasePage {
             input: document.querySelector('[data-role="chat-input"]'),
             userCount: document.querySelector('[data-role="user-count"]'),
             messageTemplate: document.getElementById('message-template'),
-            userModal: document.querySelector('[data-role="user-modal"]'),
-            userListContent: document.querySelector('[data-role="user-list-content"]'),
         };
 
         // 存储当前用户列表
         this.currentUserList = [];
+
+        // 创建UserModal实例
+        this.userModal = new UserModal({
+            title: '在线用户',
+            emptyMessage: '暂无在线用户'
+        });
 
         // 添加页面卸载事件监听
         window.addEventListener('beforeunload', () => {
@@ -43,6 +48,9 @@ class ChatPage extends BasePage {
             this.showEmptyState('请先登录再进入聊天室。');
             return;
         }
+
+        // 设置当前用户到UserModal
+        this.userModal.setCurrentUser(this.user);
 
         // 初始化头部状态显示
         this.updateConnectionStatus('offline');
@@ -163,72 +171,22 @@ class ChatPage extends BasePage {
         this.elements.userCount.textContent = users.length;
         // 更新存储的用户列表
         this.currentUserList = users;
+        // 更新UserModal中的用户列表
+        this.userModal.setUserList(users);
     }
 
     initUserModal() {
         // 点击用户计数按钮打开弹窗
         this.elements.userCount.addEventListener('click', () => {
-            this.showUserModal();
-            // 请求最新的用户列表
-            this.requestUserList();
-        });
-
-        // 点击遮罩层或关闭按钮关闭弹窗
-        const closeElements = document.querySelectorAll('[data-role="user-modal-close"]');
-        closeElements.forEach(element => {
-            element.addEventListener('click', () => {
-                this.hideUserModal();
-            });
-        });
-
-        // 点击弹窗内部阻止关闭
-        this.elements.userModal.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-
-        // ESC键关闭弹窗
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !this.elements.userModal.hidden) {
-                this.hideUserModal();
+            this.userModal.show();
+            // 如果用户列表为空，请求最新的用户列表
+            if (this.userModal.getUserList().length === 0) {
+                this.requestUserList();
             }
         });
     }
 
-    showUserModal() {
-        this.elements.userModal.hidden = false;
-        this.renderUserList();
-    }
-
-    hideUserModal() {
-        this.elements.userModal.hidden = true;
-    }
-
-    renderUserList() {
-        if (!this.currentUserList || this.currentUserList.length === 0) {
-            this.elements.userListContent.innerHTML = '<div class="user-list__empty">暂无在线用户</div>';
-            return;
-        }
-
-        const userItems = this.currentUserList.map(user => {
-            const isCurrentUser = user.username === this.user.username;
-            const avatar = user.username.charAt(0).toUpperCase();
-            const status = isCurrentUser ? '你' : '在线';
-
-            return `
-                <div class="user-list__item">
-                    <div class="user-list__avatar">${avatar}</div>
-                    <div class="user-list__info">
-                        <div class="user-list__name">${user.username}</div>
-                        <div class="user-list__status">${status}</div>
-                    </div>
-                    ${isCurrentUser ? '<span class="user-list__badge self">当前</span>' : '<span class="user-list__badge">在线</span>'}
-                </div>
-            `;
-        }).join('');
-
-        this.elements.userListContent.innerHTML = `<div class="user-list">${userItems}</div>`;
-    }
-
+    
     requestUserList() {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             const payload = {
@@ -244,9 +202,7 @@ class ChatPage extends BasePage {
 
   fetchOnlineUsers() {
     // 显示加载中状态
-    if (this.elements.userListContent) {
-        this.elements.userListContent.innerHTML = '<div class="user-list__loading">加载中...</div>';
-    }
+    this.userModal.setLoading();
 
     fetch('/api/online-users', {
         credentials: 'include'
@@ -255,16 +211,14 @@ class ChatPage extends BasePage {
     .then(data => {
         if (data.users && Array.isArray(data.users)) {
             this.currentUserList = data.users;
-            this.renderUserList();
+            this.userModal.setUserList(data.users);
         } else {
             throw new Error('无效的用户数据格式');
         }
     })
     .catch(error => {
         console.error('获取在线用户列表失败:', error);
-        if (this.elements.userListContent) {
-            this.elements.userListContent.innerHTML = '<div class="user-list__empty">无法加载用户列表</div>';
-        }
+        this.userModal.setError();
     });
   }
 

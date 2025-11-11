@@ -1,5 +1,10 @@
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// 导入UserModal组件
+import('./components/UserModal.js').then(({ UserModal }) => {
+    window.UserModal = UserModal;
+});
+
 if (!prefersReducedMotion) {
   const cards = document.querySelectorAll('.nav-card');
   cards.forEach((card) => {
@@ -58,7 +63,7 @@ const onlineSection = document.querySelector('[data-role="online-users"]');
 const onlineList = onlineSection?.querySelector('[data-role="online-user-list"]') ?? null;
 const onlineButton = document.querySelector('[data-role="online-users-button"]');
 const onlineButtonCount = document.querySelector('[data-role="online-users-count"]');
-const onlineModal = document.querySelector('[data-role="online-users-modal"]');
+let userModal = null;
 
 const state = {
   user: null,
@@ -234,74 +239,13 @@ const renderOnlineUsers = (users) => {
     onlineButtonCount.textContent = `${onlineCount} 位在线 / 共 ${totalCount} 位用户`;
   }
 
-  if (!onlineList) return;
-  onlineList.innerHTML = '';
-
-  if (!users.length) {
-    const empty = document.createElement('div');
-    empty.className = 'online-users__empty';
-    empty.textContent = '暂无注册用户';
-    onlineList.append(empty);
-    return;
+  // 使用UserModal来显示用户列表
+  if (userModal && window.UserModal) {
+    userModal.setUserList(users);
+    if (userModal.currentUser) {
+      userModal.setCurrentUser(userModal.currentUser);
+    }
   }
-
-  // 排序：在线用户优先，然后按用户名排序
-  const sortedUsers = [...users].sort((a, b) => {
-    // 在线状态优先
-    if (a.online && !b.online) return -1;
-    if (!a.online && b.online) return 1;
-    // 相同状态按用户名排序
-    return a.username.localeCompare(b.username, 'zh-CN');
-  });
-
-  sortedUsers.forEach((user) => {
-    const item = document.createElement('div');
-    item.className = 'online-users__item';
-
-    const link = document.createElement('a');
-    link.className = 'online-users__link';
-    link.href = `user-home.html?username=${encodeURIComponent(user.username)}`;
-    link.setAttribute('data-username', user.username);
-
-    const details = document.createElement('div');
-    details.className = 'online-users__details';
-
-    const identity = document.createElement('span');
-    identity.className = 'online-users__chip online-users__chip--identity';
-
-    const dot = document.createElement('span');
-    dot.className = 'online-users__dot';
-    if (user.online) {
-      dot.classList.add('is-online');
-    }
-
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'online-users__username';
-    nameSpan.textContent = user.username;
-    if (user.username && user.username.length > 12) {
-      nameSpan.classList.add('is-long');
-    }
-
-    identity.append(dot, nameSpan);
-
-    const presenceSpan = document.createElement('span');
-    presenceSpan.className = 'online-users__chip online-users__chip--state';
-    if (user.online) {
-      presenceSpan.textContent = '在线';
-      presenceSpan.classList.add('is-online');
-    } else {
-      presenceSpan.textContent = user.lastSeen ? `离线 · ${formatRelativeTime(user.lastSeen)}` : '离线 · 暂无记录';
-    }
-
-    const phoneSpan = document.createElement('span');
-    phoneSpan.className = 'online-users__chip online-users__chip--phone';
-    phoneSpan.textContent = user.phone;
-
-    details.append(identity, presenceSpan, phoneSpan);
-    link.append(details);
-    item.append(link);
-    onlineList.append(item);
-  });
 };
 
 const fetchSession = async () => {
@@ -392,6 +336,31 @@ const scheduleOnlineReconnect = () => {
     state.onlineReconnectTimer = null;
     connectOnlineSocket();
   }, 3_000);
+};
+
+const fetchOnlineUsersData = () => {
+  // 显示加载状态
+  if (userModal) {
+    userModal.setLoading();
+  }
+
+  fetch('/api/online-users', {
+    credentials: 'include'
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.users && Array.isArray(data.users)) {
+      renderOnlineUsers(data.users);
+    } else {
+      throw new Error('无效的用户数据格式');
+    }
+  })
+  .catch(error => {
+    console.error('获取在线用户列表失败:', error);
+    if (userModal) {
+      userModal.setError();
+    }
+  });
 };
 
 const connectOnlineSocket = () => {
@@ -495,6 +464,33 @@ const handleAuthSuccess = (user) => {
   startHeartbeat();
   state.shouldReconnectOnline = true;
   connectOnlineSocket();
+
+  // 初始化UserModal
+  if (window.UserModal && onlineButton && !userModal) {
+    userModal = new window.UserModal({
+      title: '实时在线用户',
+      emptyMessage: '暂无在线用户'
+    });
+
+    // 设置当前用户
+    userModal.setCurrentUser(user);
+
+    // 监听弹窗显示事件
+    userModal.modal.addEventListener('usermodal:show', () => {
+      // 当弹窗显示时，如果数据为空，则获取在线用户数据
+      if (userModal.getUserList().length === 0) {
+        fetchOnlineUsersData();
+      }
+    });
+
+    // 绑定按钮点击事件
+    onlineButton.addEventListener('click', () => {
+      userModal.show();
+      if (userModal.getUserList().length === 0) {
+        fetchOnlineUsersData();
+      }
+    });
+  }
 };
 
 const loadSession = async () => {
@@ -594,33 +590,6 @@ if (loginModal && registerModal && userBanner) {
     }
   });
 
-  // 在线用户弹窗事件处理
-  if (onlineButton && onlineModal) {
-    // 点击按钮打开弹窗
-    onlineButton.addEventListener('click', () => {
-      onlineModal.hidden = false;
-    });
-
-    // 点击遮罩层或关闭按钮关闭弹窗
-    const closeElements = Array.from(onlineModal.querySelectorAll('[data-role="online-users-modal-close"]'));
-    closeElements.forEach(element => {
-      element.addEventListener('click', () => {
-        onlineModal.hidden = true;
-      });
-    });
-
-    // 点击弹窗内部阻止关闭
-    onlineModal.addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
-
-    // ESC键关闭弹窗
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !onlineModal.hidden) {
-        onlineModal.hidden = true;
-      }
-    });
-  }
-
+  
   loadSession();
 }
