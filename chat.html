@@ -53,6 +53,22 @@
     </li>
 </template>
 
+<!-- 用户列表弹窗 -->
+<div class="user-modal" data-role="user-modal" hidden>
+    <div class="user-modal__overlay" data-role="user-modal-close"></div>
+    <div class="user-modal__dialog">
+        <div class="user-modal__header">
+            <h3 class="user-modal__title">在线用户</h3>
+            <button class="user-modal__close" data-role="user-modal-close" aria-label="关闭">×</button>
+        </div>
+        <div class="user-modal__content">
+            <div class="user-list" data-role="user-list-content">
+                <div class="user-list__loading">加载中...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="module" src="js/chat.js"></script>
 </body>
 </html>
