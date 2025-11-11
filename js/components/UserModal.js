@@ -30,7 +30,10 @@ export class UserModal {
         style.textContent = `
             .user-modal {
                 position: fixed;
-                inset: 0;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
                 z-index: 9999;
                 display: flex;
                 align-items: center;
@@ -40,6 +43,8 @@ export class UserModal {
                 transition: all 0.3s ease;
                 background: rgba(0, 0, 0, 0.6);
                 backdrop-filter: blur(4px);
+                padding: 1rem;
+                box-sizing: border-box;
             }
 
             .user-modal:not([hidden]) {
@@ -48,9 +53,13 @@ export class UserModal {
             }
 
             .user-modal__overlay {
-                position: absolute;
-                inset: 0;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
                 cursor: pointer;
+                z-index: -1;
             }
 
             .user-modal__dialog {
@@ -63,7 +72,6 @@ export class UserModal {
                 max-width: min(500px, 90vw);
                 max-height: min(600px, 80vh);
                 width: 100%;
-                margin: 1rem;
                 overflow: hidden;
                 transform: scale(0.9);
                 transition: transform 0.3s ease;
@@ -199,7 +207,6 @@ export class UserModal {
             @media (max-width: 640px) {
                 .user-modal__dialog {
                     max-width: min(400px, 95vw);
-                    margin: 0.75rem;
                 }
 
                 .user-modal__header {
