@@ -2,12 +2,69 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
 
 // 导入UserModal组件
 let UserModal = null;
+let UserModalLoaded = false;
 import('./components/UserModal.js').then(module => {
     UserModal = module.UserModal;
+    UserModalLoaded = true;
     window.UserModal = UserModal;
+    console.log('UserModal module loaded successfully');
+    // 如果已经登录，初始化UserModal
+    if (state.user && onlineButton && !userModal) {
+        initUserModal();
+    }
 }).catch(error => {
     console.error('Failed to import UserModal:', error);
 });
+
+// 初始化UserModal的函数
+const initUserModal = () => {
+    if (!UserModalLoaded || !UserModal || !onlineButton || userModal) {
+        console.log('Cannot initialize UserModal:', {
+            UserModalLoaded,
+            UserModal: !!UserModal,
+            onlineButton: !!onlineButton,
+            userModal: !!userModal,
+            stateUser: !!state.user
+        });
+        return;
+    }
+
+    console.log('Initializing UserModal...');
+
+    try {
+        userModal = new UserModal({
+            title: '实时在线用户',
+            emptyMessage: '暂无在线用户'
+        });
+
+        // 设置当前用户
+        userModal.setCurrentUser(state.user);
+
+        // 绑定按钮点击事件
+        onlineButton.addEventListener('click', (e) => {
+            console.log('Online users button clicked!');
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (!userModal) {
+                console.error('UserModal instance not found!');
+                return;
+            }
+
+            userModal.show();
+            if (userModal.getUserList().length === 0) {
+                fetchOnlineUsersData();
+            }
+        });
+
+        // 测试按钮是否正确绑定
+        console.log('Button event listener attached. Button:', onlineButton);
+
+        console.log('UserModal initialized successfully');
+    } catch (error) {
+        console.error('Error initializing UserModal:', error);
+    }
+};
 
 if (!prefersReducedMotion) {
   const cards = document.querySelectorAll('.nav-card');
@@ -466,36 +523,11 @@ const handleAuthSuccess = (user) => {
   state.shouldReconnectOnline = true;
   connectOnlineSocket();
 
-  // 初始化UserModal - 使用延迟确保模块已加载
-  const initUserModal = () => {
-    if (UserModal && onlineButton && !userModal) {
-      console.log('Initializing UserModal...');
-      userModal = new UserModal({
-        title: '实时在线用户',
-        emptyMessage: '暂无在线用户'
-      });
-
-      // 设置当前用户
-      userModal.setCurrentUser(user);
-
-      // 绑定按钮点击事件
-      onlineButton.addEventListener('click', () => {
-        console.log('UserModal button clicked');
-        userModal.show();
-        if (userModal.getUserList().length === 0) {
-          fetchOnlineUsersData();
-        }
-      });
-
-      console.log('UserModal initialized successfully');
-    }
-  };
-
-  // 如果模块还没加载，等待一下再初始化
-  if (UserModal) {
+  // 初始化UserModal - 如果模块已经加载
+  if (UserModalLoaded) {
     initUserModal();
   } else {
-    setTimeout(initUserModal, 100);
+    console.log('UserModal not yet loaded, will be initialized after loading');
   }
 };
 
@@ -597,5 +629,27 @@ if (loginModal && registerModal && userBanner) {
   });
 
   
+  // 添加备用初始化方案
+  // 如果5秒后UserModal还没加载，再次尝试
+  setTimeout(() => {
+    if (state.user && UserModalLoaded && !userModal && onlineButton) {
+      console.log('Retry initializing UserModal after timeout');
+      initUserModal();
+    }
+  }, 5000);
+
+  // 添加直接测试（仅用于调试）
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      const testButton = document.querySelector('[data-role="online-users-button"]');
+      if (testButton && window.UserModal) {
+        console.log('Direct test: Button found, UserModal available');
+        testButton.addEventListener('click', () => {
+          console.log('Direct click test triggered');
+        });
+      }
+    }, 2000);
+  });
+
   loadSession();
 }
