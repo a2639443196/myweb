@@ -32,12 +32,23 @@ class ChatPage extends BasePage {
     initForm() {
         this.elements.form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const message = this.elements.input.value.trim();
-            if (message) {
-                this.sendMessage(message);
-                this.elements.input.value = '';
+            this.submitMessage();
+        });
+
+        this.elements.input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.submitMessage();
             }
         });
+    }
+
+    submitMessage() {
+        const message = this.elements.input.value.trim();
+        if (message) {
+            this.sendMessage(message);
+            this.elements.input.value = '';
+        }
     }
 
     sendMessage(message) {
