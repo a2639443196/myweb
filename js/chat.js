@@ -58,6 +58,8 @@ class ChatPage extends BasePage {
         this.ws.onmessage = this.handleSocketMessage.bind(this);
         this.ws.onopen = () => {
             this.updateConnectionStatus('online');
+            // 连接成功后请求用户列表
+            this.requestUserList();
         };
         this.ws.onclose = () => {
             this.updateConnectionStatus('offline');
@@ -124,6 +126,8 @@ class ChatPage extends BasePage {
     handleSocketMessage(event) {
         try {
             const data = JSON.parse(event.data);
+            console.log('WebSocket message received:', data);
+
             switch (data.type) {
                 case 'chat_history':
                     this.renderHistory(data.payload);

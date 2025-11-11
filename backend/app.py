@@ -42,11 +42,11 @@ class ChatManager:
             self.broadcast_system_message(f"用户 {username} 离开了聊天室")
 
     def broadcast_user_list(self) -> None:
-        with self._lock:
-            users = list(self._clients.values())
+        # 获取所有在线用户，包括不在聊天室的用户
+        online_users = list_online_users()
         self.broadcast({
             "type": "user_list",
-            "payload": {"users": users},
+            "payload": {"users": online_users},
         })
 
     def broadcast_message(self, message: Dict[str, Any]) -> None:

@@ -146,7 +146,16 @@ export class UserModal {
     }
 
     renderUserList() {
-        const users = this.sortUsers(this.currentUserList);
+        // 确保包含当前用户
+        let users = [...this.currentUserList];
+        if (this.currentUser && !users.find(u => u.username === this.currentUser.username)) {
+            users.push({
+                ...this.currentUser,
+                online: true // 当前用户默认为在线状态
+            });
+        }
+
+        users = this.sortUsers(users);
 
         if (!users.length) {
             this.setEmpty();
@@ -165,13 +174,13 @@ export class UserModal {
                         <div class="user-list__name">${user.username}</div>
                         <div class="user-list__status">${status}</div>
                     </div>
-                    ${user.online ? '<span class="user-list__badge">在线</span>' : ''}
+                    ${user.online && !isCurrentUser ? '<span class="user-list__badge">在线</span>' : ''}
                     ${isCurrentUser ? '<span class="user-list__badge self">当前</span>' : ''}
                 </div>
             `;
         }).join('');
 
-        this.userListContainer.innerHTML = userItems;
+        this.userListContainer.innerHTML = `<div class="user-list">${userItems}</div>`;
     }
 
     // 设置当前用户信息（用于标记当前用户）

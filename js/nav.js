@@ -1,8 +1,12 @@
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // 导入UserModal组件
-import('./components/UserModal.js').then(({ UserModal }) => {
+let UserModal = null;
+import('./components/UserModal.js').then(module => {
+    UserModal = module.UserModal;
     window.UserModal = UserModal;
+}).catch(error => {
+    console.error('Failed to import UserModal:', error);
 });
 
 if (!prefersReducedMotion) {
@@ -240,11 +244,8 @@ const renderOnlineUsers = (users) => {
   }
 
   // 使用UserModal来显示用户列表
-  if (userModal && window.UserModal) {
+  if (userModal && UserModal) {
     userModal.setUserList(users);
-    if (userModal.currentUser) {
-      userModal.setCurrentUser(userModal.currentUser);
-    }
   }
 };
 
@@ -465,31 +466,36 @@ const handleAuthSuccess = (user) => {
   state.shouldReconnectOnline = true;
   connectOnlineSocket();
 
-  // 初始化UserModal
-  if (window.UserModal && onlineButton && !userModal) {
-    userModal = new window.UserModal({
-      title: '实时在线用户',
-      emptyMessage: '暂无在线用户'
-    });
+  // 初始化UserModal - 使用延迟确保模块已加载
+  const initUserModal = () => {
+    if (UserModal && onlineButton && !userModal) {
+      console.log('Initializing UserModal...');
+      userModal = new UserModal({
+        title: '实时在线用户',
+        emptyMessage: '暂无在线用户'
+      });
 
-    // 设置当前用户
-    userModal.setCurrentUser(user);
+      // 设置当前用户
+      userModal.setCurrentUser(user);
 
-    // 监听弹窗显示事件
-    userModal.modal.addEventListener('usermodal:show', () => {
-      // 当弹窗显示时，如果数据为空，则获取在线用户数据
-      if (userModal.getUserList().length === 0) {
-        fetchOnlineUsersData();
-      }
-    });
+      // 绑定按钮点击事件
+      onlineButton.addEventListener('click', () => {
+        console.log('UserModal button clicked');
+        userModal.show();
+        if (userModal.getUserList().length === 0) {
+          fetchOnlineUsersData();
+        }
+      });
 
-    // 绑定按钮点击事件
-    onlineButton.addEventListener('click', () => {
-      userModal.show();
-      if (userModal.getUserList().length === 0) {
-        fetchOnlineUsersData();
-      }
-    });
+      console.log('UserModal initialized successfully');
+    }
+  };
+
+  // 如果模块还没加载，等待一下再初始化
+  if (UserModal) {
+    initUserModal();
+  } else {
+    setTimeout(initUserModal, 100);
   }
 };
 
